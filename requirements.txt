@@ -1,0 +1,6 @@
+django
+django-extensions
+djangorestframework
+channels
+uvicorn[standard]
+python-dotenv
