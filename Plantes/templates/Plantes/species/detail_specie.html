@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}{{ specie.vernacular_name }} — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <p><a href="{% url 'list_species' %}">&laquo; Retour aux espèces</a></p>
+
+    <h1>{{ specie.vernacular_name }}</h1>
+    <p><em>{{ specie.scientific_name }}</em></p>
+
+    {% if specie.image %}
+        <img src="{{ specie.image.url }}" alt="{{ specie.vernacular_name }}">
+    {% endif %}
+
+    {% if specie.description %}
+        <p>{{ specie.description }}</p>
+    {% endif %}
+
+
+    <h2>Identité</h2>
+
+    <dl>
+        <dt>Nom vernaculaire</dt>
+        <dd>{{ specie.vernacular_name }}</dd>
+
+        <dt>Nom vernaculaire (anglais)</dt>
+        <dd>{{ specie.vernacular_name_en|default_if_none:"—" }}</dd>
+
+        <dt>Nom scientifique</dt>
+        <dd><em>{{ specie.scientific_name }}</em></dd>
+
+        <dt>Clé GBIF</dt>
+        <dd>{{ specie.gbif_key|default_if_none:"—" }}</dd>
+    </dl>
+
+
+    <h2>Taxonomie</h2>
+
+    <dl>
+        <dt>Classe</dt>
+        <dd>{{ specie.taxon_class|default_if_none:"—" }}</dd>
+
+        <dt>Ordre</dt>
+        <dd>{{ specie.taxon_order|default_if_none:"—" }}</dd>
+
+        <dt>Famille</dt>
+        <dd>{{ specie.taxon_family|default_if_none:"—" }}</dd>
+
+        <dt>Genre</dt>
+        <dd>{{ specie.taxon_genus|default_if_none:"—" }}</dd>
+    </dl>
+
+
+    <h2>Exigences</h2>
+
+    <dl>
+        <dt>Exposition</dt>
+        <dd>
+            {% if specie.min_exposure or specie.max_exposure %}
+                {{ specie.min_exposure|default_if_none:"?" }} → {{ specie.max_exposure|default_if_none:"?" }}
+            {% else %}
+                —
+            {% endif %}
+        </dd>
+
+        <dt>Humidité</dt>
+        <dd>
+            {% if specie.humidity %}
+                {{ specie.humidity }} ({{ specie.humidity.min_HR }} – {{ specie.humidity.max_HR }} % HR)
+            {% else %}
+                —
+            {% endif %}
+        </dd>
+
+        <dt>Tolérance à la sécheresse</dt>
+        <dd>
+            {% if specie.drought_tolerance %}
+                {{ specie.drought_tolerance }}
+                ({{ specie.drought_tolerance.tolerancy_days_allowed }} jours sans arrosage)
+            {% else %}
+                —
+            {% endif %}
+        </dd>
+
+        <dt>Températures</dt>
+        <dd>
+            {% if specie.min_temp is not None or specie.max_temp is not None %}
+                {{ specie.min_temp|default_if_none:"?" }} °C → {{ specie.max_temp|default_if_none:"?" }} °C
+            {% else %}
+                —
+            {% endif %}
+        </dd>
+
+        <dt>Substrat conseillé</dt>
+        <dd>{{ specie.recommended_substrate|default_if_none:"—" }}</dd>
+    </dl>
+
+
+    <h2>Règles de soin par défaut</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Action</th>
+                <th>Intervalle</th>
+                <th>Période</th>
+                <th>Détail</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for rule in specie.care_rules.all %}
+                <tr>
+                    <td>{{ rule.action }}</td>
+                    <td>tous les {{ rule.interval_days }} jour{{ rule.interval_days|pluralize }}</td>
+                    <td>du mois {{ rule.month_start }} au mois {{ rule.month_end }}</td>
+                    <td>{{ rule.description|default_if_none:"—" }}</td>
+                </tr>
+
+            {% empty %}
+                <tr>
+                    <td colspan="4">Aucune règle de soin définie pour cette espèce.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+
+    <h2>Mes plantes de cette espèce</h2>
+
+    <ul>
+        {% for plant in specie.plant_set.all %}
+            <li>{{ plant }}{% if plant.spot %} — {{ plant.spot }}{% endif %}</li>
+
+        {% empty %}
+            <li>Aucune plante de cette espèce dans ta collection.</li>
+        {% endfor %}
+    </ul>
+
+{% endblock %}

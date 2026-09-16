@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Espèces — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <h1>Espèces</h1>
+
+    <p>
+        {{ all_species.paginator.count }} espèce{{ all_species.paginator.count|pluralize }} en catalogue —
+        page {{ all_species.number }} sur {{ all_species.paginator.num_pages }}
+    </p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nom vernaculaire</th>
+                <th>Nom scientifique</th>
+                <th>Famille</th>
+                <th>Genre</th>
+                <th>Exposition</th>
+                <th>Humidité</th>
+                <th>Tolérance sécheresse</th>
+                <th>Températures</th>
+                <th>Substrat conseillé</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for specie in all_species %}
+                <tr>
+                    <td>
+                        <a href="{% url 'detail_specie' specie.id %}">{{ specie.vernacular_name }}</a>
+                    </td>
+
+                    <td><em>{{ specie.scientific_name }}</em></td>
+
+                    <td>{{ specie.taxon_family|default_if_none:"—" }}</td>
+
+                    <td>{{ specie.taxon_genus|default_if_none:"—" }}</td>
+
+                    <td>
+                        {% if specie.min_exposure or specie.max_exposure %}
+                            {{ specie.min_exposure|default_if_none:"?" }} → {{ specie.max_exposure|default_if_none:"?" }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+
+                    <td>{{ specie.humidity|default_if_none:"—" }}</td>
+
+                    <td>{{ specie.drought_tolerance|default_if_none:"—" }}</td>
+
+                    <td>
+                        {% if specie.min_temp is not None or specie.max_temp is not None %}
+                            {{ specie.min_temp|default_if_none:"?" }}°C → {{ specie.max_temp|default_if_none:"?" }}°C
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+
+                    <td>{{ specie.recommended_substrate|default_if_none:"—" }}</td>
+                </tr>
+
+            {% empty %}
+                <tr>
+                    <td colspan="9">Aucune espèce en base.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <nav>
+        {% if all_species.has_previous %}
+            <a href="?page=1">&laquo; Première</a>
+            <a href="?page={{ all_species.previous_page_number }}">Précédente</a>
+        {% endif %}
+
+        {% if all_species.has_next %}
+            <a href="?page={{ all_species.next_page_number }}">Suivante</a>
+            <a href="?page={{ all_species.paginator.num_pages }}">Dernière &raquo;</a>
+        {% endif %}
+    </nav>
+
+{% endblock %}

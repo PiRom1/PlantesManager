@@ -81,6 +81,8 @@ class SpecieAdmin(admin.ModelAdmin):
     list_display = (
         'vernacular_name',
         'scientific_name',
+        'taxon_family',
+        'taxon_genus',
         'min_exposure',
         'max_exposure',
         'humidity',
@@ -90,13 +92,23 @@ class SpecieAdmin(admin.ModelAdmin):
         'recommended_substrate',
     )
     list_filter = (
+        'taxon_family',
+        'taxon_genus',
         'min_exposure',
         'max_exposure',
         'humidity',
         'drought_tolerance',
         'recommended_substrate',
     )
-    search_fields = ('vernacular_name', 'scientific_name', 'description')
+    search_fields = (
+        'vernacular_name',
+        'vernacular_name_en',
+        'scientific_name',
+        'taxon_family',
+        'taxon_genus',
+        'gbif_key',
+        'description',
+    )
     list_select_related = (
         'min_exposure',
         'max_exposure',
@@ -177,6 +189,7 @@ class PlantAdmin(admin.ModelAdmin):
         '__str__',
         'user',
         'specie',
+        'cultivar',
         'state',
         'spot',
         'pot',
@@ -187,6 +200,7 @@ class PlantAdmin(admin.ModelAdmin):
     list_filter = ('user', 'specie', 'state', 'spot', 'substrate', 'acquisition_date')
     search_fields = (
         'surname',
+        'cultivar',
         'origin',
         'specie__vernacular_name',
         'specie__scientific_name',

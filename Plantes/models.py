@@ -1,7 +1,23 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 
-# Create your models here.
+
+########## Chemins d'upload ##########
+
+
+def specie_image_path(instance, filename):
+    """media/SpecieImages/<gbif_key>/<filename>"""
+    return f'SpecieImages/{instance.gbif_key or instance.pk or "unsorted"}/{filename}'
+
+
+def plant_image_path(instance, filename):
+    """media/PlantImages/<plant_id>/<filename>"""
+    return f'PlantImages/{instance.pk or "unsorted"}/{filename}'
+
+
+def plant_history_image_path(instance, filename):
+    """media/PlantImages/<plant_id>/history/<filename>"""
+    return f'PlantImages/{instance.plant_id or "unsorted"}/history/{filename}'
 
 
 class UserManager(BaseUserManager):
@@ -141,9 +157,19 @@ class Specie(models.Model):
     A plant specimen
     """
 
-    vernacular_name = models.CharField(max_length=100)
+    gbif_key = models.BigIntegerField(unique=True, default=None, null=True, blank=True)
+
+    vernacular_name = models.CharField(max_length=500)
+    vernacular_name_en = models.CharField(max_length=500, default=None, null=True, blank=True)
     scientific_name = models.CharField(max_length=100)
     description = models.TextField(default = None, null = True, blank=True)
+    image = models.ImageField(upload_to=specie_image_path, default=None, null=True, blank=True)
+
+    ## Taxonomie (source GBIF)
+    taxon_class = models.CharField(max_length=50, default=None, null=True, blank=True)
+    taxon_order = models.CharField(max_length=50, default=None, null=True, blank=True)
+    taxon_family = models.CharField(max_length=50, default=None, null=True, blank=True)
+    taxon_genus = models.CharField(max_length=50, default=None, null=True, blank=True)
 
     ## Exigences
     min_exposure = models.ForeignKey(Exposure, related_name="species_as_min", on_delete=models.SET_NULL, null=True, blank=True)
@@ -260,7 +286,8 @@ class Plant(models.Model):
 
     # Identity
     specie = models.ForeignKey(Specie, on_delete=models.SET_NULL, null=True, blank=True)
-    image = models.ImageField(upload_to="PlantImages", default=None, null = True, blank = True)
+    cultivar = models.CharField(max_length=100, default=None, null=True, blank=True)
+    image = models.ImageField(upload_to=plant_image_path, default=None, null = True, blank = True)
     state = models.ForeignKey(PlantState, on_delete=models.SET_NULL, default=None, null=True, blank=True)
     acquisition_date = models.DateTimeField(default=None, null = True, blank=True)
     origin = models.CharField(max_length=50, null=True, blank=True, default=None)
@@ -275,7 +302,10 @@ class Plant(models.Model):
     last_modification_date = models.DateTimeField(default = None, null = True, blank = True)
 
     def __str__(self):
-        return self.surname or f'{self.specie} #{self.pk}'
+        if self.surname:
+            return self.surname
+        specie = f"{self.specie} '{self.cultivar}'" if self.cultivar else f'{self.specie}'
+        return f'{specie} #{self.pk}'
 
 
 
@@ -293,7 +323,7 @@ class PlantHistory(models.Model):
 
     # User vrac
     comment = models.TextField(default=None, blank=True, null=True)
-    image = models.ImageField(upload_to="PlantImages", null=True, blank = True, default=None)
+    image = models.ImageField(upload_to=plant_history_image_path, null=True, blank = True, default=None)
     detail = models.JSONField(default = None, null=True, blank=True)
 
     # Measures

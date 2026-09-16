@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}PlantesManager{% endblock %}</title>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <header>
+        <nav>
+            <a href="{% url 'list_species' %}">Espèces</a>
+        </nav>
+
+        {% if user.is_authenticated %}
+            <p>
+                Connecté en tant que {{ user.username }}
+                <a href="{% url 'admin:index' %}">Administration</a>
+            </p>
+            <form action="{% url 'logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit">Déconnexion</button>
+            </form>
+        {% else %}
+            <p><a href="{% url 'login' %}">Connexion</a></p>
+        {% endif %}
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+</body>
+</html>
