@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Mes plantes — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <h1>Mes plantes</h1>
+
+    <p><a href="{% url 'add_plant' %}">+ Ajouter une plante</a></p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Plante</th>
+                <th>Espèce</th>
+                <th>Cultivar</th>
+                <th>État</th>
+                <th>Emplacement</th>
+                <th>Pot</th>
+                <th>Substrat</th>
+                <th>Acquise le</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for plant in all_plants %}
+                <tr>
+                    <td><a href="{% url 'detail_plant' plant.id %}">{{ plant }}</a></td>
+                    <td>{{ plant.specie|default_if_none:"—" }}</td>
+                    <td>{{ plant.cultivar|default_if_none:"—" }}</td>
+                    <td>{{ plant.state|default_if_none:"—" }}</td>
+                    <td>{{ plant.spot|default_if_none:"—" }}</td>
+                    <td>{{ plant.pot|default_if_none:"—" }}</td>
+                    <td>{{ plant.substrate|default_if_none:"—" }}</td>
+                    <td>{{ plant.acquisition_date|date:"d/m/Y"|default:"—" }}</td>
+                    <td><a href="{% url 'edit_plant' plant.id %}">Modifier</a></td>
+                </tr>
+
+            {% empty %}
+                <tr>
+                    <td colspan="9">
+                        Aucune plante pour l'instant.
+                        <a href="{% url 'add_plant' %}">Ajoute la première</a>.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}

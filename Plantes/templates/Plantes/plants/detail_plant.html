@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ plant }} — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <p><a href="{% url 'list_plants' %}">&laquo; Mes plantes</a></p>
+
+    <h1>{{ plant }}</h1>
+
+    <p><a href="{% url 'edit_plant' plant.id %}">Modifier cette plante</a></p>
+
+    {% if plant.image %}
+        <img src="{{ plant.image.url }}" alt="{{ plant }}">
+    {% endif %}
+
+
+    <h2>Identité</h2>
+
+    <dl>
+        <dt>Espèce</dt>
+        <dd>
+            {% if plant.specie %}
+                <a href="{% url 'detail_specie' plant.specie.id %}">{{ plant.specie }}</a>
+            {% else %}
+                —
+            {% endif %}
+        </dd>
+
+        <dt>Cultivar</dt>
+        <dd>{{ plant.cultivar|default_if_none:"—" }}</dd>
+
+        <dt>Surnom</dt>
+        <dd>{{ plant.surname|default_if_none:"—" }}</dd>
+
+        <dt>État</dt>
+        <dd>{{ plant.state|default_if_none:"—" }}</dd>
+
+        <dt>Plante mère</dt>
+        <dd>
+            {% if plant.father %}
+                <a href="{% url 'detail_plant' plant.father.id %}">{{ plant.father }}</a>
+            {% else %}
+                —
+            {% endif %}
+        </dd>
+    </dl>
+
+
+    <h2>Conditions de culture</h2>
+
+    <dl>
+        <dt>Emplacement</dt>
+        <dd>
+            {% if plant.spot %}
+                <a href="{% url 'detail_spot' plant.spot.id %}">{{ plant.spot }}</a>
+            {% else %}
+                —
+            {% endif %}
+        </dd>
+
+        <dt>Pot</dt>
+        <dd>
+            {% if plant.pot %}
+                <a href="{% url 'detail_pot' plant.pot.id %}">{{ plant.pot }}</a>
+            {% else %}
+                —
+            {% endif %}
+        </dd>
+
+        <dt>Substrat</dt>
+        <dd>{{ plant.substrate|default_if_none:"—" }}</dd>
+    </dl>
+
+
+    <h2>Acquisition</h2>
+
+    <dl>
+        <dt>Date</dt>
+        <dd>{{ plant.acquisition_date|date:"d/m/Y"|default:"—" }}</dd>
+
+        <dt>Prix</dt>
+        <dd>{% if plant.acquisition_price %}{{ plant.acquisition_price }} €{% else %}—{% endif %}</dd>
+
+        <dt>Origine</dt>
+        <dd>{{ plant.origin|default_if_none:"—" }}</dd>
+
+        <dt>Ajoutée le</dt>
+        <dd>{{ plant.creation_date|date:"d/m/Y à H:i" }}</dd>
+
+        <dt>Modifiée le</dt>
+        <dd>{{ plant.last_modification_date|date:"d/m/Y à H:i"|default:"—" }}</dd>
+    </dl>
+
+
+    <h2>Journal d'entretien</h2>
+
+    <h3>Noter une action</h3>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {{ history_form.non_field_errors }}
+
+        <p>
+            {{ history_form.action.label_tag }} {{ history_form.action }} {{ history_form.action.errors }}
+        </p>
+
+        {% for action in actions %}
+            {% if action.detail_fields %}
+                <fieldset data-action-fields="{{ action.id }}" hidden>
+                    <legend>{{ action.name }}</legend>
+
+                    {% for field in action.detail_fields %}
+                        {% with input_id="detail_"|add:action.code|add:"_"|add:field.name %}
+                            <p>
+                                <label for="{{ input_id }}">{{ field.label }}</label>
+
+                                {% if field.type == 'select' %}
+                                    <select name="{{ input_id }}" id="{{ input_id }}">
+                                        <option value="">—</option>
+                                        {% for value, label in field.choices %}
+                                            <option value="{{ value }}">{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+
+                                {% elif field.type == 'boolean' %}
+                                    <input type="checkbox" name="{{ input_id }}" id="{{ input_id }}">
+
+                                {% elif field.type == 'integer' %}
+                                    <input type="number" step="1" name="{{ input_id }}" id="{{ input_id }}">
+
+                                {% elif field.type == 'decimal' %}
+                                    <input type="number" step="any" name="{{ input_id }}" id="{{ input_id }}">
+
+                                {% else %}
+                                    <input type="text" name="{{ input_id }}" id="{{ input_id }}">
+                                {% endif %}
+                            </p>
+                        {% endwith %}
+                    {% endfor %}
+                </fieldset>
+            {% endif %}
+        {% endfor %}
+
+        <p>
+            {{ history_form.date.label_tag }} {{ history_form.date }} {{ history_form.date.errors }}
+        </p>
+
+        <p>
+            {{ history_form.comment.label_tag }} {{ history_form.comment }} {{ history_form.comment.errors }}
+        </p>
+
+        <p>
+            {{ history_form.image.label_tag }} {{ history_form.image }} {{ history_form.image.errors }}
+        </p>
+
+        <p>
+            {{ history_form.height.label_tag }} {{ history_form.height }} {{ history_form.height.errors }}
+            {{ history_form.width.label_tag }} {{ history_form.width }} {{ history_form.width.errors }}
+            {{ history_form.n_leaves.label_tag }} {{ history_form.n_leaves }} {{ history_form.n_leaves.errors }}
+        </p>
+
+        <button type="submit">Enregistrer dans le journal</button>
+    </form>
+
+    <script src="{% static 'Plantes/js/care_detail.js' %}"></script>
+
+
+    <h3>Historique</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Action</th>
+                <th>Commentaire</th>
+                <th>Mesures</th>
+                <th>Détail</th>
+                <th>Photo</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for entry in history %}
+                <tr>
+                    <td>{{ entry.date|date:"d/m/Y à H:i" }}</td>
+
+                    <td>{{ entry.action|default_if_none:"—" }}</td>
+
+                    <td>{{ entry.comment|default_if_none:"—"|linebreaksbr }}</td>
+
+                    <td>
+                        {% if entry.height %}<span>hauteur {{ entry.height }} cm</span>{% endif %}
+                        {% if entry.width %}<span>largeur {{ entry.width }} cm</span>{% endif %}
+                        {% if entry.n_leaves %}<span>{{ entry.n_leaves }} feuille{{ entry.n_leaves|pluralize }}</span>{% endif %}
+                        {% if not entry.height and not entry.width and not entry.n_leaves %}—{% endif %}
+                    </td>
+
+                    <td>
+                        {% for label, value in entry.detail_summary %}
+                            <span>{{ label }} : {{ value }}</span>
+                        {% empty %}
+                            —
+                        {% endfor %}
+                    </td>
+
+                    <td>
+                        {% if entry.image %}
+                            <a href="{{ entry.image.url }}">voir</a>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+
+            {% empty %}
+                <tr>
+                    <td colspan="6">Aucune action enregistrée pour cette plante.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+
+    <h2>Boutures issues de cette plante</h2>
+
+    <ul>
+        {% for child in plant.children.all %}
+            <li><a href="{% url 'detail_plant' child.id %}">{{ child }}</a></li>
+
+        {% empty %}
+            <li>Aucune bouture.</li>
+        {% endfor %}
+    </ul>
+
+{% endblock %}

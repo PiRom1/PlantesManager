@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}{{ pot.denomination }} — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <p><a href="{% url 'list_pots' %}">&laquo; Mes pots</a></p>
+
+    <h1>{{ pot.denomination }}</h1>
+
+    <h2>Modifier</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Enregistrer</button>
+    </form>
+
+    <h2>Plantes dans ce pot</h2>
+
+    <ul>
+        {% for plant in pot.plant_set.all %}
+            <li><a href="{% url 'detail_plant' plant.id %}">{{ plant }}</a></li>
+
+        {% empty %}
+            <li>Aucune plante dans ce pot.</li>
+        {% endfor %}
+    </ul>
+
+{% endblock %}

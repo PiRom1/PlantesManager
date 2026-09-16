@@ -9,6 +9,8 @@
     <h1>{{ specie.vernacular_name }}</h1>
     <p><em>{{ specie.scientific_name }}</em></p>
 
+    <p><a href="{% url 'add_plant' %}?specie={{ specie.id }}">J'ai cette plante chez moi</a></p>
+
     {% if specie.image %}
         <img src="{{ specie.image.url }}" alt="{{ specie.vernacular_name }}">
     {% endif %}
@@ -130,11 +132,17 @@
     <h2>Mes plantes de cette espèce</h2>
 
     <ul>
-        {% for plant in specie.plant_set.all %}
-            <li>{{ plant }}{% if plant.spot %} — {{ plant.spot }}{% endif %}</li>
+        {% for plant in my_plants %}
+            <li>
+                <a href="{% url 'detail_plant' plant.id %}">{{ plant }}</a>
+                {% if plant.spot %} — {{ plant.spot }}{% endif %}
+            </li>
 
         {% empty %}
-            <li>Aucune plante de cette espèce dans ta collection.</li>
+            <li>
+                Aucune plante de cette espèce dans ta collection.
+                <a href="{% url 'add_plant' %}?specie={{ specie.id }}">Ajoute-la</a>.
+            </li>
         {% endfor %}
     </ul>
 

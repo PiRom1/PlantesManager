@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Mes pots — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <h1>Mes pots</h1>
+
+    <p><a href="{% url 'add_pot' %}">+ Ajouter un pot</a></p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Dénomination</th>
+                <th>Matériau</th>
+                <th>Volume</th>
+                <th>Facteur de séchage</th>
+                <th>Plantes</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for pot in all_pots %}
+                <tr>
+                    <td><a href="{% url 'detail_pot' pot.id %}">{{ pot.denomination }}</a></td>
+                    <td>{{ pot.material|default_if_none:"—" }}</td>
+                    <td>{% if pot.volume_litre %}{{ pot.volume_litre }} L{% else %}—{% endif %}</td>
+                    <td>{{ pot.drying_factor }}</td>
+                    <td>{{ pot.plant_set.count }}</td>
+                    <td><a href="{% url 'detail_pot' pot.id %}">Modifier</a></td>
+                </tr>
+
+            {% empty %}
+                <tr>
+                    <td colspan="6">
+                        Aucun pot.
+                        <a href="{% url 'add_pot' %}">Crée le premier</a>.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}

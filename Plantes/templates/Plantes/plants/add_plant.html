@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Ajouter une plante — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <p><a href="{% url 'list_plants' %}">&laquo; Mes plantes</a></p>
+
+    <h1>Ajouter une plante</h1>
+
+    {% include "Plantes/plants/_plant_form.html" with submit_label="Ajouter" %}
+
+{% endblock %}

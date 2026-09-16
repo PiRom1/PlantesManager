@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Mes emplacements — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <h1>Mes emplacements</h1>
+
+    <p><a href="{% url 'add_spot' %}">+ Ajouter un emplacement</a></p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Exposition</th>
+                <th>Humidité</th>
+                <th>Températures</th>
+                <th>Facteur de séchage</th>
+                <th>Équipements</th>
+                <th>Plantes</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for spot in all_spots %}
+                <tr>
+                    <td><a href="{% url 'detail_spot' spot.id %}">{{ spot.name }}</a></td>
+                    <td>{{ spot.exposure|default_if_none:"—" }}</td>
+                    <td>{{ spot.humidity|default_if_none:"—" }}</td>
+                    <td>
+                        {% if spot.min_temp is not None or spot.max_temp is not None %}
+                            {{ spot.min_temp|default_if_none:"?" }} °C → {{ spot.max_temp|default_if_none:"?" }} °C
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td>{{ spot.drying_factor }}</td>
+                    <td>
+                        {% if spot.has_additional_light %}Éclairage {% endif %}
+                        {% if spot.has_heater %}Chauffage {% endif %}
+                        {% if spot.has_moister %}Humidificateur{% endif %}
+                        {% if not spot.has_additional_light and not spot.has_heater and not spot.has_moister %}—{% endif %}
+                    </td>
+                    <td>{{ spot.plant_set.count }}</td>
+                    <td><a href="{% url 'detail_spot' spot.id %}">Modifier</a></td>
+                </tr>
+
+            {% empty %}
+                <tr>
+                    <td colspan="8">
+                        Aucun emplacement.
+                        <a href="{% url 'add_spot' %}">Crée le premier</a>.
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}

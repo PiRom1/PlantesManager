@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvel emplacement — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <p><a href="{% url 'list_spots' %}">&laquo; Mes emplacements</a></p>
+
+    <h1>Nouvel emplacement</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Créer</button>
+    </form>
+
+{% endblock %}

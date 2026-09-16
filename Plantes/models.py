@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 
@@ -66,6 +68,151 @@ class User(AbstractUser):
         return f'{self.username}'
 
 
+########## Détail des actions ##########
+
+
+class DetailFieldType(models.TextChoices):
+    """Types de champ acceptés dans Action.DETAIL_FIELDS."""
+
+    SELECT = 'select', 'Liste de choix'
+    INTEGER = 'integer', 'Nombre entier'
+    DECIMAL = 'decimal', 'Nombre décimal'
+    TEXT = 'text', 'Texte libre'
+    BOOLEAN = 'boolean', 'Oui / non'
+
+
+class WaterType(models.TextChoices):
+    TAP = 'TAP', 'Robinet'
+    RAIN = 'RAIN', 'Pluie'
+    DEMINERALIZED = 'DEMINERALIZED', 'Déminéralisée'
+    FILTERED = 'FILTERED', 'Filtrée'
+
+
+class WateringMethod(models.TextChoices):
+    SURFACE = 'SURFACE', 'En surface'
+    SOAKING = 'SOAKING', 'Par bassinage'
+    DRIP = 'DRIP', 'Goutte-à-goutte'
+
+
+class FertilizerForm(models.TextChoices):
+    LIQUID = 'LIQUID', 'Liquide'
+    STICK = 'STICK', 'Bâtonnet'
+    GRANULES = 'GRANULES', 'Granulés'
+    ORGANIC = 'ORGANIC', 'Organique'
+
+
+class PruneType(models.TextChoices):
+    MAINTENANCE = 'MAINTENANCE', 'Entretien'
+    SHAPING = 'SHAPING', 'Mise en forme'
+    TOPPING = 'TOPPING', 'Étêtage'
+    ROOTS = 'ROOTS', 'Racines'
+
+
+class RepotReason(models.TextChoices):
+    ROOT_BOUND = 'ROOT_BOUND', "Racines à l'étroit"
+    GROWTH = 'GROWTH', 'Croissance'
+    PURCHASE = 'PURCHASE', 'Achat'
+
+
+class RootState(models.TextChoices):
+    HEALTHY = 'HEALTHY', 'Saines'
+    SOME_DEAD = 'SOME_DEAD', 'Quelques racines mortes'
+    ROT = 'ROT', 'Pourriture'
+
+
+class SubstrateChangeReason(models.TextChoices):
+    SPENT = 'SPENT', 'Épuisé'
+    UNSUITABLE = 'UNSUITABLE', 'Inadapté'
+    CONTAMINATED = 'CONTAMINATED', 'Contaminé'
+
+
+class MoveReason(models.TextChoices):
+    NOT_ENOUGH_LIGHT = 'NOT_ENOUGH_LIGHT', 'Lumière insuffisante'
+    TOO_MUCH_SUN = 'TOO_MUCH_SUN', 'Trop de soleil'
+    DRAFT = 'DRAFT', "Courant d'air"
+    TEMPERATURE = 'TEMPERATURE', 'Température'
+    HUMIDITY = 'HUMIDITY', 'Humidité'
+    REARRANGEMENT = 'REARRANGEMENT', 'Réaménagement'
+
+
+class CleaningMethod(models.TextChoices):
+    DAMP_CLOTH = 'DAMP_CLOTH', 'Chiffon humide'
+    SHOWER = 'SHOWER', 'Douche'
+    SPRAY = 'SPRAY', 'Pulvérisation'
+
+
+class PestCheckResult(models.TextChoices):
+    CLEAR = 'CLEAR', 'Rien à signaler'
+    SUSPICION = 'SUSPICION', 'Suspicion'
+    CONFIRMED = 'CONFIRMED', 'Infestation confirmée'
+
+
+class Pest(models.TextChoices):
+    MEALYBUG = 'MEALYBUG', 'Cochenille farineuse'
+    SCALE = 'SCALE', 'Cochenille à bouclier'
+    SPIDER_MITE = 'SPIDER_MITE', 'Araignées rouges'
+    THRIPS = 'THRIPS', 'Thrips'
+    APHID = 'APHID', 'Pucerons'
+    FUNGUS_GNAT = 'FUNGUS_GNAT', 'Mouches du terreau'
+    OTHER = 'OTHER', 'Autre'
+
+
+class PestSeverity(models.TextChoices):
+    LIGHT = 'LIGHT', 'Légère'
+    MODERATE = 'MODERATE', 'Modérée'
+    SEVERE = 'SEVERE', 'Sévère'
+
+
+class PestTreatment(models.TextChoices):
+    NONE = 'NONE', 'Aucun'
+    MANUAL = 'MANUAL', 'Retrait manuel'
+    BLACK_SOAP = 'BLACK_SOAP', 'Savon noir'
+    NEEM = 'NEEM', 'Huile de neem'
+    ALCOHOL = 'ALCOHOL', 'Alcool'
+    INSECTICIDE = 'INSECTICIDE', 'Insecticide'
+
+
+class PropagationMethod(models.TextChoices):
+    STEM_CUTTING = 'STEM_CUTTING', 'Bouture de tige'
+    LEAF_CUTTING = 'LEAF_CUTTING', 'Bouture de feuille'
+    LAYERING = 'LAYERING', 'Marcottage'
+    DIVISION = 'DIVISION', 'Division'
+    SEED = 'SEED', 'Semis'
+
+
+class PropagationMedium(models.TextChoices):
+    WATER = 'WATER', 'Eau'
+    SOIL = 'SOIL', 'Terreau'
+    SPHAGNUM = 'SPHAGNUM', 'Sphaigne'
+    PERLITE = 'PERLITE', 'Perlite'
+
+
+@dataclass(frozen=True)
+class DetailField:
+    """
+    Un champ de détail saisi lors d'une action.
+
+    `choices` n'a de sens que pour un champ de type SELECT ; la cohérence est
+    vérifiée à l'import, donc une faute de frappe casse au démarrage plutôt
+    que de passer inaperçue au rendu.
+    """
+
+    name: str
+    label: str
+    type: str
+    choices: tuple = ()
+
+    def __post_init__(self):
+        if self.type not in DetailFieldType.values:
+            raise ValueError(f"{self.name} : type '{self.type}' inconnu")
+
+        if self.type == DetailFieldType.SELECT and not self.choices:
+            raise ValueError(f'{self.name} : un champ select doit avoir des choix')
+
+        if self.type != DetailFieldType.SELECT and self.choices:
+            raise ValueError(f"{self.name} : seul un champ select accepte des choix")
+
+
 ########## Generic models ##########
 
 
@@ -80,12 +227,82 @@ class Action(models.Model):
         - ...
     """
 
+    # Champs de détail saisis lors de la réalisation de l'action, par code.
+    # Seule source de vérité : le formulaire, la validation au POST et
+    # l'affichage de l'historique sont tous construits à partir d'ici.
+    # Types acceptés : 'select', 'integer', 'decimal', 'text', 'boolean'.
+    DETAIL_FIELDS = {
+
+        'WATER': [
+            DetailField('water_type', "Type d'eau", DetailFieldType.SELECT, WaterType.choices),
+            DetailField('volume_ml', 'Volume (mL)', DetailFieldType.INTEGER),
+            DetailField('method', 'Méthode', DetailFieldType.SELECT, WateringMethod.choices),
+            DetailField('runoff', 'Écoulement par le fond', DetailFieldType.BOOLEAN),
+        ],
+
+        'MIST': [
+            DetailField('water_type', "Type d'eau", DetailFieldType.SELECT, WaterType.choices),
+            DetailField('n_sprays', 'Nombre de sprays', DetailFieldType.INTEGER),
+        ],
+
+        'FERTILIZE': [
+            DetailField('fertilizer_form', 'Forme', DetailFieldType.SELECT, FertilizerForm.choices),
+            DetailField('npk', 'NPK', DetailFieldType.TEXT),
+            DetailField('dose', 'Dose (mL ou g par litre)', DetailFieldType.DECIMAL),
+        ],
+
+        'PRUNE': [
+            DetailField('prune_type', 'Type de taille', DetailFieldType.SELECT, PruneType.choices),
+            DetailField('removed_leaves', 'Feuilles retirées', DetailFieldType.INTEGER),
+        ],
+
+        'REPOT': [
+            DetailField('reason', 'Motif', DetailFieldType.SELECT, RepotReason.choices),
+            DetailField('root_state', 'État des racines', DetailFieldType.SELECT, RootState.choices),
+            DetailField('roots_pruned', 'Racines taillées', DetailFieldType.BOOLEAN),
+        ],
+
+        'CHANGE_SUBSTRATE': [
+            DetailField('reason', 'Motif', DetailFieldType.SELECT, SubstrateChangeReason.choices),
+            DetailField('amendment', 'Amendement ajouté', DetailFieldType.TEXT),
+        ],
+
+        'MOVE': [
+            DetailField('reason', 'Motif', DetailFieldType.SELECT, MoveReason.choices),
+        ],
+
+        'CLEAN_LEAVES': [
+            DetailField('method', 'Méthode', DetailFieldType.SELECT, CleaningMethod.choices),
+            DetailField('product', 'Produit', DetailFieldType.TEXT),
+        ],
+
+        'CHECK_PESTS': [
+            DetailField('result', 'Résultat', DetailFieldType.SELECT, PestCheckResult.choices),
+            DetailField('pest', 'Parasite', DetailFieldType.SELECT, Pest.choices),
+            DetailField('severity', 'Gravité', DetailFieldType.SELECT, PestSeverity.choices),
+            DetailField('treatment', 'Traitement', DetailFieldType.SELECT, PestTreatment.choices),
+        ],
+
+        'PROPAGATE': [
+            DetailField('method', 'Méthode', DetailFieldType.SELECT, PropagationMethod.choices),
+            DetailField('medium', 'Milieu', DetailFieldType.SELECT, PropagationMedium.choices),
+            DetailField('n_cuttings', 'Nombre de boutures', DetailFieldType.INTEGER),
+            DetailField('hormone', 'Hormone de bouturage', DetailFieldType.BOOLEAN),
+        ],
+    }
+
     name = models.CharField(max_length=50)
     code = models.CharField(max_length=50)
     description = models.TextField()
 
     def __str__(self):
         return self.name
+
+    @property
+    def detail_fields(self):
+        """Champs de détail de cette action (liste vide si elle n'en a pas)."""
+
+        return self.DETAIL_FIELDS.get(self.code, [])
 
 
 
@@ -194,6 +411,8 @@ class Spot(models.Model):
     A spot in your house where you store many plants in the same abiotic conditions
     """
 
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=None, null=True, blank=True)
+
     name = models.CharField(max_length=100)
     description = models.TextField(default=None, null = True, blank=True)
 
@@ -218,6 +437,8 @@ class Pot(models.Model):
     """
     A generic pot where you install a plant
     """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=None, null=True, blank=True)
 
     denomination = models.CharField(max_length=100)
     material = models.CharField(max_length=50, blank=True, null=True, default=None)
@@ -289,7 +510,7 @@ class Plant(models.Model):
     cultivar = models.CharField(max_length=100, default=None, null=True, blank=True)
     image = models.ImageField(upload_to=plant_image_path, default=None, null = True, blank = True)
     state = models.ForeignKey(PlantState, on_delete=models.SET_NULL, default=None, null=True, blank=True)
-    acquisition_date = models.DateTimeField(default=None, null = True, blank=True)
+    acquisition_date = models.DateField(default=None, null = True, blank=True)
     origin = models.CharField(max_length=50, null=True, blank=True, default=None)
     surname = models.CharField(max_length=100, null=True, blank=True, default=None) # Surnom éventuel
     acquisition_price = models.FloatField(default=None, null=True, blank=True)
@@ -299,7 +520,7 @@ class Plant(models.Model):
     substrate = models.ForeignKey(Substrate, on_delete=models.SET_NULL, default=None, null=True, blank=True)
     
     creation_date = models.DateTimeField(auto_now_add=True)
-    last_modification_date = models.DateTimeField(default = None, null = True, blank = True)
+    last_modification_date = models.DateTimeField(auto_now=True, null = True, blank = True)
 
     def __str__(self):
         if self.surname:
@@ -335,6 +556,33 @@ class PlantHistory(models.Model):
 
     def __str__(self):
         return f'{self.plant} - {self.action} ({self.date:%d/%m/%Y})'
+
+    @property
+    def detail_summary(self):
+        """
+        Contenu de `detail` traduit en paires (libellé, valeur lisible),
+        d'après le schéma porté par l'action.
+        """
+
+        if not self.detail or not self.action:
+            return []
+
+        summary = []
+
+        for field in self.action.detail_fields:
+            if field.name not in self.detail:
+                continue
+
+            value = self.detail[field.name]
+
+            if field.type == DetailFieldType.SELECT:
+                value = dict(field.choices).get(value, value)
+            elif field.type == DetailFieldType.BOOLEAN:
+                value = 'oui' if value else 'non'
+
+            summary.append((field.label, value))
+
+        return summary
 
 
 

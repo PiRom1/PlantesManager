@@ -1,0 +1,101 @@
+{% load static %}
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    {{ form.non_field_errors }}
+
+    <p>
+        <label for="specie-search">Espèce</label>
+        <input type="text" id="specie-search"
+               value="{{ selected_specie|default:'' }}"
+               data-autocomplete-url="{% url 'search_species' %}"
+               data-target="{{ form.specie.auto_id }}"
+               placeholder="Taper au moins 2 caractères…">
+        <ul data-suggestions-for="{{ form.specie.auto_id }}"></ul>
+        {{ form.specie }}
+        {{ form.specie.errors }}
+    </p>
+
+    <p>
+        {{ form.cultivar.label_tag }} {{ form.cultivar }} {{ form.cultivar.errors }}
+    </p>
+
+    <p>
+        {{ form.surname.label_tag }} {{ form.surname }} {{ form.surname.errors }}
+    </p>
+
+    <p>
+        {{ form.state.label_tag }} {{ form.state }} {{ form.state.errors }}
+    </p>
+
+    <p>
+        {{ form.spot.label_tag }} {{ form.spot }}
+        <button type="button" data-opens="dialog-spot">+ Nouvel emplacement</button>
+        {{ form.spot.errors }}
+    </p>
+
+    <p>
+        {{ form.pot.label_tag }} {{ form.pot }}
+        <button type="button" data-opens="dialog-pot">+ Nouveau pot</button>
+        {{ form.pot.errors }}
+    </p>
+
+    <p>
+        {{ form.substrate.label_tag }} {{ form.substrate }} {{ form.substrate.errors }}
+    </p>
+
+    <p>
+        {{ form.father.label_tag }} {{ form.father }} {{ form.father.errors }}
+    </p>
+
+    <p>
+        {{ form.acquisition_date.label_tag }} {{ form.acquisition_date }} {{ form.acquisition_date.errors }}
+    </p>
+
+    <p>
+        {{ form.acquisition_price.label_tag }} {{ form.acquisition_price }} {{ form.acquisition_price.errors }}
+    </p>
+
+    <p>
+        {{ form.origin.label_tag }} {{ form.origin }} {{ form.origin.errors }}
+    </p>
+
+    <p>
+        {{ form.image.label_tag }} {{ form.image }} {{ form.image.errors }}
+    </p>
+
+    <button type="submit">{{ submit_label }}</button>
+</form>
+
+
+<dialog id="dialog-spot" data-post-url="{% url 'add_spot' %}" data-target="{{ form.spot.auto_id }}">
+    <h2>Nouvel emplacement</h2>
+    <p data-errors></p>
+
+    <form method="dialog">
+        {% csrf_token %}
+        {{ spot_form.as_p }}
+        <button type="submit">Créer</button>
+    </form>
+
+    <button type="button" onclick="this.closest('dialog').close()">Annuler</button>
+</dialog>
+
+
+<dialog id="dialog-pot" data-post-url="{% url 'add_pot' %}" data-target="{{ form.pot.auto_id }}">
+    <h2>Nouveau pot</h2>
+    <p data-errors></p>
+
+    <form method="dialog">
+        {% csrf_token %}
+        {{ pot_form.as_p }}
+        <button type="submit">Créer</button>
+    </form>
+
+    <button type="button" onclick="this.closest('dialog').close()">Annuler</button>
+</dialog>
+
+
+<script src="{% static 'Plantes/js/autocomplete.js' %}"></script>
+<script src="{% static 'Plantes/js/quick_add.js' %}"></script>

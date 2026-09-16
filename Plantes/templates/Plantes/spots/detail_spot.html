@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}{{ spot.name }} — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <p><a href="{% url 'list_spots' %}">&laquo; Mes emplacements</a></p>
+
+    <h1>{{ spot.name }}</h1>
+
+    <h2>Modifier</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Enregistrer</button>
+    </form>
+
+    <h2>Plantes à cet emplacement</h2>
+
+    <ul>
+        {% for plant in spot.plant_set.all %}
+            <li><a href="{% url 'detail_plant' plant.id %}">{{ plant }}</a></li>
+
+        {% empty %}
+            <li>Aucune plante ici pour l'instant.</li>
+        {% endfor %}
+    </ul>
+
+{% endblock %}

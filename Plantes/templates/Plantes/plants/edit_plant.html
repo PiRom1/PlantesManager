@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier {{ plant }} — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <p><a href="{% url 'detail_plant' plant.id %}">&laquo; Retour à la fiche</a></p>
+
+    <h1>Modifier {{ plant }}</h1>
+
+    {% include "Plantes/plants/_plant_form.html" with submit_label="Enregistrer" %}
+
+{% endblock %}
