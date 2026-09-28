@@ -1,0 +1,10 @@
+{# Un champ de formulaire Django : libellé, widget, aide, erreurs. #}
+{# Usage : {% include "includes/_field.html" with field=form.name %} #}
+<div class="field{% if field.errors %} field--error{% endif %}{% if field.field.widget.input_type == 'checkbox' %} field--check{% endif %}">
+    <label class="field__label{% if field.field.required %} field__label--required{% endif %}" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}
+        <span class="field__help">{{ field.help_text }}</span>
+    {% endif %}
+    {{ field.errors }}
+</div>

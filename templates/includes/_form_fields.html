@@ -1,0 +1,11 @@
+{# Tous les champs visibles d'un formulaire, dans l'ordre de sa déclaration. #}
+{# Usage : {% include "includes/_form_fields.html" with form=form %} #}
+{{ form.non_field_errors }}
+
+{% for hidden in form.hidden_fields %}
+    {{ hidden }}
+{% endfor %}
+
+{% for field in form.visible_fields %}
+    {% include "includes/_field.html" with field=field %}
+{% endfor %}

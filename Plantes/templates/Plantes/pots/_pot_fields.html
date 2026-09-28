@@ -1,0 +1,10 @@
+{# Champs du formulaire pot. Attend `form`. #}
+{{ form.non_field_errors }}
+
+{% include "includes/_field.html" with field=form.denomination %}
+
+<div class="form__row">
+    {% include "includes/_field.html" with field=form.material %}
+    {% include "includes/_field.html" with field=form.volume_litre %}
+    {% include "includes/_field.html" with field=form.drying_factor %}
+</div>

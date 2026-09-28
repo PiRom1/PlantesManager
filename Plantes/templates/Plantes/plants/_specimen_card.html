@@ -1,0 +1,29 @@
+{# Carte d'une plante dans une grille : planche carrée, nom, nom latin, état. Attend `plant`. #}
+<a class="specimen" href="{% url 'detail_plant' plant.id %}">
+    <span class="plate__frame">
+        {% if plant.spot %}
+            <span class="specimen__tag">{{ plant.spot }}</span>
+        {% endif %}
+        {% if plant.image %}
+            <img src="{{ plant.image.url }}" alt="{{ plant }}" loading="lazy">
+        {% elif plant.specie.image %}
+            <img src="{{ plant.specie.image.url }}" alt="{{ plant.specie.vernacular_name }}" loading="lazy">
+        {% else %}
+            <span class="specimen__frame--empty">{% include "includes/_icon_leaf.html" %}</span>
+        {% endif %}
+    </span>
+    <span>
+        <span class="specimen__name">
+            {% if plant.surname %}{{ plant.surname }}{% elif plant.specie %}{{ plant.specie.vernacular_name }}{% else %}Plante #{{ plant.id }}{% endif %}
+            {% if plant.cultivar %}‘{{ plant.cultivar }}’{% endif %}
+        </span>
+        {% if plant.specie %}
+            <span class="specimen__latin latin">{{ plant.specie.scientific_name }}</span>
+        {% endif %}
+    </span>
+    <span class="specimen__meta">
+        {% if plant.state %}<span class="chip">{{ plant.state }}</span>{% endif %}
+        {% if plant.pot %}<span>{{ plant.pot }}</span>{% endif %}
+        {% if plant.substrate %}<span>{{ plant.substrate }}</span>{% endif %}
+    </span>
+</a>

@@ -4,48 +4,31 @@
 
 {% block content %}
 
-    <h1>Mes plantes</h1>
+    <header class="page-head">
+        <div>
+            <h1 class="page-head__title">Mes plantes</h1>
+            <p class="page-head__sub">
+                {{ all_plants|length }} plante{{ all_plants|length|pluralize }} dans ta collection
+            </p>
+        </div>
+        <div class="page-head__actions">
+            <a class="btn btn--primary" href="{% url 'add_plant' %}">Ajouter une plante</a>
+        </div>
+    </header>
 
-    <p><a href="{% url 'add_plant' %}">+ Ajouter une plante</a></p>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Plante</th>
-                <th>Espèce</th>
-                <th>Cultivar</th>
-                <th>État</th>
-                <th>Emplacement</th>
-                <th>Pot</th>
-                <th>Substrat</th>
-                <th>Acquise le</th>
-                <th></th>
-            </tr>
-        </thead>
-
-        <tbody>
+    {% if all_plants %}
+        <ul class="grid">
             {% for plant in all_plants %}
-                <tr>
-                    <td><a href="{% url 'detail_plant' plant.id %}">{{ plant }}</a></td>
-                    <td>{{ plant.specie|default_if_none:"—" }}</td>
-                    <td>{{ plant.cultivar|default_if_none:"—" }}</td>
-                    <td>{{ plant.state|default_if_none:"—" }}</td>
-                    <td>{{ plant.spot|default_if_none:"—" }}</td>
-                    <td>{{ plant.pot|default_if_none:"—" }}</td>
-                    <td>{{ plant.substrate|default_if_none:"—" }}</td>
-                    <td>{{ plant.acquisition_date|date:"d/m/Y"|default:"—" }}</td>
-                    <td><a href="{% url 'edit_plant' plant.id %}">Modifier</a></td>
-                </tr>
-
-            {% empty %}
-                <tr>
-                    <td colspan="9">
-                        Aucune plante pour l'instant.
-                        <a href="{% url 'add_plant' %}">Ajoute la première</a>.
-                    </td>
-                </tr>
+                <li>{% include "Plantes/plants/_specimen_card.html" with plant=plant %}</li>
             {% endfor %}
-        </tbody>
-    </table>
+        </ul>
+
+    {% else %}
+        <div class="empty">
+            {% include "includes/_icon_leaf.html" %}
+            <p>Ta collection est vide. Ajoute ta première plante : choisis son espèce dans le catalogue, puis note où elle vit et dans quel pot.</p>
+            <a class="btn btn--primary" href="{% url 'add_plant' %}">Ajouter une plante</a>
+        </div>
+    {% endif %}
 
 {% endblock %}

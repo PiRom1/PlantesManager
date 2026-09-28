@@ -1,0 +1,1396 @@
+/* ==========================================================================
+   PlantesManager — feuille de base, chargée sur toutes les pages.
+
+   Thème : planches naturalistes sur fond noir-vert.
+   Sections : 1. jetons   2. reset   3. coquille (sidebar + contenu)
+              4. typographie   5. composants   6. formulaires   7. utilitaires
+   ========================================================================== */
+
+
+/* 1. Jetons ------------------------------------------------------------- */
+
+:root {
+    /* Couleurs */
+    --bg: #0b120e;
+    --surface: #121c16;
+    --surface-2: #182620;
+    --surface-3: #1f3128;
+    --line: #22352a;
+    --line-strong: #345240;
+    --text: #e4ece3;
+    --text-2: #a4b6a7;
+    --text-3: #6f8676;
+    --leaf: #86d65a;
+    --leaf-ink: #0b1a08;
+    --leaf-soft: rgba(134, 214, 90, 0.12);
+    --moss: #5fb56d;
+    --ochre: #d2b36e;
+    --danger: #e08070;
+    --danger-soft: rgba(224, 128, 112, 0.14);
+
+    /* Typographie */
+    --font-display: "Cormorant Garamond", "Garamond", Georgia, serif;
+    --font-ui: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
+
+    /* Échelle typographique (base 16px, ratio 1.25) */
+    --fs-xs: 0.8rem;
+    --fs-sm: 0.9rem;
+    --fs-md: 1rem;
+    --fs-lg: 1.25rem;
+    --fs-xl: 1.6rem;
+    --fs-2xl: 2.1rem;
+    --fs-3xl: 2.8rem;
+
+    /* Espacements */
+    --sp-1: 0.25rem;
+    --sp-2: 0.5rem;
+    --sp-3: 0.75rem;
+    --sp-4: 1rem;
+    --sp-5: 1.5rem;
+    --sp-6: 2rem;
+    --sp-7: 3rem;
+    --sp-8: 4rem;
+
+    /* Rayons : les planches sont presque carrées, les contrôles arrondis */
+    --r-plate: 3px;
+    --r-control: 6px;
+    --r-surface: 10px;
+
+    /* Dimensions */
+    --sidebar-w: 248px;
+    --content-w: 1180px;
+    --measure: 68ch;
+
+    /* Ombres : une seule, profonde, réservée aux planches et dialogues */
+    --shadow-plate: 0 20px 40px -24px rgba(0, 0, 0, 0.9);
+
+    /* Transitions */
+    --t-fast: 120ms ease;
+}
+
+
+/* 2. Reset --------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: var(--fs-md);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+}
+
+img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+a {
+    color: var(--moss);
+    text-decoration: none;
+    text-underline-offset: 0.15em;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+:focus-visible {
+    outline: 2px solid var(--leaf);
+    outline-offset: 2px;
+    border-radius: var(--r-control);
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+dl,
+p,
+ul,
+ol,
+h1,
+h2,
+h3,
+h4 {
+    margin: 0;
+}
+
+ul,
+ol {
+    padding: 0;
+    list-style: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+
+/* 3. Coquille ------------------------------------------------------------- */
+
+.shell {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    min-height: 100dvh;
+}
+
+.sidebar {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-6);
+    padding: var(--sp-5) var(--sp-4);
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-1) var(--sp-2);
+    color: var(--text);
+}
+
+.brand:hover {
+    text-decoration: none;
+}
+
+.brand__mark {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    background: var(--leaf);
+    color: var(--leaf-ink);
+    border-radius: var(--r-control);
+}
+
+.brand__mark svg {
+    width: 24px;
+    height: 24px;
+}
+
+.brand__name {
+    font-family: var(--font-display);
+    font-size: var(--fs-lg);
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.brand__tagline {
+    font-size: var(--fs-xs);
+    color: var(--text-3);
+}
+
+.nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+}
+
+.nav__link {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-3);
+    border-radius: var(--r-control);
+    color: var(--text-2);
+    font-weight: 500;
+    transition: background var(--t-fast), color var(--t-fast);
+}
+
+.nav__link svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+}
+
+.nav__link:hover {
+    background: var(--surface-2);
+    color: var(--text);
+    text-decoration: none;
+}
+
+.nav__link--active,
+.nav__link--active:hover {
+    background: var(--leaf);
+    color: var(--leaf-ink);
+}
+
+.sidebar__foot {
+    margin-top: auto;
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+}
+
+.sidebar__user {
+    color: var(--text-2);
+}
+
+.sidebar__user strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.sidebar__links {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+}
+
+.main {
+    min-width: 0;
+    padding: var(--sp-6) var(--sp-7) var(--sp-8);
+}
+
+.page {
+    max-width: var(--content-w);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-6);
+}
+
+.page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    padding-bottom: var(--sp-4);
+    border-bottom: 1px solid var(--line);
+}
+
+.page-head__back {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    margin-bottom: var(--sp-2);
+    font-size: var(--fs-sm);
+    color: var(--text-3);
+}
+
+.page-head__back svg {
+    width: 14px;
+    height: 14px;
+}
+
+.page-head__back:hover {
+    color: var(--text);
+}
+
+.page-head__title {
+    font-family: var(--font-display);
+    font-size: var(--fs-3xl);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+}
+
+.page-head__sub {
+    margin-top: var(--sp-1);
+    color: var(--text-2);
+}
+
+.page-head__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+}
+
+/* Coquille sans sidebar : connexion */
+.shell--bare {
+    display: grid;
+    place-items: center;
+    min-height: 100dvh;
+    padding: var(--sp-5);
+}
+
+@media (max-width: 900px) {
+    .shell {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        position: static;
+        height: auto;
+        gap: var(--sp-4);
+        padding: var(--sp-3) var(--sp-4);
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .nav {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .nav__link {
+        padding: var(--sp-2) var(--sp-3);
+    }
+
+    .sidebar__foot {
+        margin-top: 0;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .sidebar__user {
+        white-space: nowrap;
+    }
+
+    .main {
+        padding: var(--sp-5) var(--sp-4) var(--sp-7);
+    }
+
+    .page-head__title {
+        font-size: var(--fs-2xl);
+    }
+}
+
+
+/* 4. Typographie ----------------------------------------------------------- */
+
+h1,
+h2,
+h3 {
+    font-family: var(--font-display);
+    font-weight: 500;
+    line-height: 1.15;
+}
+
+h2 {
+    font-size: var(--fs-xl);
+}
+
+h3 {
+    font-size: var(--fs-lg);
+}
+
+.latin {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.12em;
+    color: var(--ochre);
+    letter-spacing: 0.005em;
+}
+
+.muted {
+    color: var(--text-2);
+}
+
+.quiet {
+    color: var(--text-3);
+}
+
+.prose {
+    max-width: var(--measure);
+    color: var(--text-2);
+}
+
+
+/* 5. Composants ---------------------------------------------------------- */
+
+/* Section : un titre et son contenu */
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+.section__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-4);
+}
+
+.section__count {
+    font-size: var(--fs-sm);
+    color: var(--text-3);
+}
+
+/* Planche : une image encadrée comme une gravure, avec sa légende */
+.plate {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+}
+
+.plate__frame {
+    position: relative;
+    padding: 6px;
+    background: #000;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-plate);
+    box-shadow: var(--shadow-plate);
+}
+
+.plate__frame::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border: 1px solid var(--line);
+    pointer-events: none;
+}
+
+.plate__frame img {
+    width: 100%;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: 1px;
+}
+
+.plate__frame--empty {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 5;
+    color: var(--text-3);
+}
+
+.plate__frame--empty svg {
+    width: 40%;
+    height: auto;
+    opacity: 0.5;
+}
+
+.plate__caption {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: var(--fs-md);
+    color: var(--text-2);
+    text-align: center;
+    line-height: 1.3;
+}
+
+.plate--wide .plate__frame img,
+.plate--wide .plate__frame--empty {
+    aspect-ratio: 16 / 10;
+}
+
+/* Grille de cartes */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--sp-5);
+}
+
+@media (max-width: 600px) {
+    .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--sp-4);
+    }
+}
+
+.grid--wide {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+/* Carte spécimen : une planche cliquable et son cartel */
+.specimen {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    color: var(--text);
+}
+
+.specimen:hover {
+    text-decoration: none;
+}
+
+.specimen:hover .plate__frame {
+    border-color: var(--moss);
+}
+
+/* Dans la grille, tous les cadres sont carrés, avec ou sans photo */
+.specimen .plate__frame {
+    display: grid;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+}
+
+.specimen .plate__frame img {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    object-fit: cover;
+}
+
+.specimen__frame--empty {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    color: var(--text-3);
+}
+
+.specimen__frame--empty svg {
+    width: 36%;
+    height: auto;
+    opacity: 0.5;
+}
+
+.specimen__tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 1;
+    padding: 2px 8px;
+    background: rgba(11, 18, 14, 0.85);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-control);
+    font-size: var(--fs-xs);
+    color: var(--text-2);
+}
+
+.specimen__name {
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.specimen__latin {
+    display: block;
+    font-size: var(--fs-md);
+}
+
+.specimen__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1) var(--sp-3);
+    font-size: var(--fs-sm);
+    color: var(--text-3);
+}
+
+/* Cartel : la fiche descriptive d'une planche (liste de définitions) */
+.legend {
+    display: grid;
+    grid-template-columns: minmax(120px, 180px) 1fr;
+    column-gap: var(--sp-5);
+}
+
+.legend dt {
+    padding: var(--sp-2) 0;
+    color: var(--text-3);
+    font-size: var(--fs-sm);
+    border-top: 1px solid var(--line);
+}
+
+.legend dd {
+    padding: var(--sp-2) 0;
+    margin: 0;
+    border-top: 1px solid var(--line);
+}
+
+.legend dt:first-of-type,
+.legend dd:first-of-type {
+    border-top: 0;
+}
+
+/* Panneau : surface de regroupement (formulaire, fiche) */
+.panel {
+    padding: var(--sp-5);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-surface);
+}
+
+.panel--tight {
+    padding: var(--sp-4);
+}
+
+/* Tableau : filets horizontaux fins, sans zébrure */
+.table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: var(--r-surface);
+    background: var(--surface);
+}
+
+.table th,
+.table td {
+    padding: var(--sp-3) var(--sp-4);
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--line);
+}
+
+.table th {
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--text-3);
+    white-space: nowrap;
+    background: var(--surface-2);
+}
+
+.table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.table tbody tr:hover td {
+    background: var(--surface-2);
+}
+
+.table td.is-num {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+.table td.is-empty {
+    text-align: center;
+    padding: var(--sp-6);
+    color: var(--text-2);
+}
+
+.table a {
+    color: var(--text);
+    font-weight: 500;
+}
+
+.table a:hover {
+    color: var(--leaf);
+}
+
+/* Pastille d'état */
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: 2px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    font-size: var(--fs-xs);
+    color: var(--text-2);
+    white-space: nowrap;
+}
+
+.chip--leaf {
+    border-color: transparent;
+    background: var(--leaf-soft);
+    color: var(--leaf);
+}
+
+/* Boutons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-4);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-control);
+    background: var(--surface-2);
+    color: var(--text);
+    font-weight: 500;
+    line-height: 1.4;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--t-fast), border-color var(--t-fast), color var(--t-fast);
+}
+
+.btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.btn:hover {
+    background: var(--surface-3);
+    border-color: var(--moss);
+    text-decoration: none;
+}
+
+.btn--primary {
+    background: var(--leaf);
+    border-color: var(--leaf);
+    color: var(--leaf-ink);
+}
+
+.btn--primary:hover {
+    background: #98e26e;
+    border-color: #98e26e;
+}
+
+.btn--ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-2);
+}
+
+.btn--ghost:hover {
+    background: var(--surface-2);
+    border-color: transparent;
+    color: var(--text);
+}
+
+.btn--small {
+    padding: var(--sp-1) var(--sp-3);
+    font-size: var(--fs-sm);
+}
+
+/* État vide : une invitation, pas un constat */
+.empty {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-3);
+    padding: var(--sp-6);
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--r-surface);
+    color: var(--text-2);
+}
+
+.empty svg {
+    width: 36px;
+    height: 36px;
+    color: var(--text-3);
+}
+
+.empty p {
+    max-width: var(--measure);
+}
+
+/* Liste simple de liens (boutures, plantes d'un pot…) */
+.linklist {
+    display: flex;
+    flex-direction: column;
+}
+
+.linklist li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    padding: var(--sp-3) 0;
+    border-top: 1px solid var(--line);
+}
+
+.linklist li:first-child {
+    border-top: 0;
+}
+
+.linklist li.linklist__empty {
+    display: block;
+    color: var(--text-3);
+}
+
+.linklist a {
+    color: var(--text);
+    font-weight: 500;
+}
+
+.linklist a:hover {
+    color: var(--leaf);
+}
+
+/* Pagination */
+.pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+}
+
+.pager__links {
+    display: flex;
+    gap: var(--sp-2);
+}
+
+/* Messages */
+.notice {
+    padding: var(--sp-3) var(--sp-4);
+    border-radius: var(--r-control);
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+    color: var(--text-2);
+}
+
+.notice--error {
+    border-color: var(--danger);
+    background: var(--danger-soft);
+    color: var(--text);
+}
+
+/* Boîte de dialogue */
+dialog {
+    width: min(480px, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    padding: var(--sp-5);
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-surface);
+    box-shadow: var(--shadow-plate);
+}
+
+dialog::backdrop {
+    background: rgba(4, 8, 6, 0.75);
+}
+
+.dialog__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: var(--sp-4);
+}
+
+.dialog__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+}
+
+
+/* 6. Formulaires ----------------------------------------------------------- */
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+.form__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--sp-4);
+}
+
+.form__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding-top: var(--sp-2);
+}
+
+.form__group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    border: 1px solid var(--line);
+    border-radius: var(--r-control);
+    background: var(--surface-2);
+}
+
+.form__group-title {
+    font-family: var(--font-ui);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--text-2);
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    min-width: 0;
+}
+
+.field__label {
+    font-size: var(--fs-sm);
+    color: var(--text-2);
+}
+
+.field__label--required::after {
+    content: " *";
+    color: var(--ochre);
+}
+
+.field__help {
+    font-size: var(--fs-xs);
+    color: var(--text-3);
+}
+
+.field__inline {
+    display: flex;
+    gap: var(--sp-2);
+    align-items: stretch;
+}
+
+.field__inline > :first-child {
+    flex: 1;
+    min-width: 0;
+}
+
+.field--check {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--sp-2);
+}
+
+.field--check .field__label {
+    color: var(--text);
+    order: 2;
+}
+
+.field input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.field select,
+.field textarea {
+    width: 100%;
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-control);
+    color: var(--text);
+    transition: border-color var(--t-fast);
+}
+
+.field input:hover,
+.field select:hover,
+.field textarea:hover {
+    border-color: var(--moss);
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+    outline: none;
+    border-color: var(--leaf);
+    box-shadow: 0 0 0 3px var(--leaf-soft);
+}
+
+.field textarea {
+    height: 6rem;
+    min-height: 3rem;
+    resize: vertical;
+}
+
+.field select {
+    appearance: none;
+    padding-right: 2.2rem;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23a4b6a7' stroke-width='1.6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 0.8rem center;
+}
+
+.field input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--leaf);
+}
+
+.field input[type="file"] {
+    font-size: var(--fs-sm);
+    color: var(--text-2);
+}
+
+.field input[type="file"]::file-selector-button {
+    margin-right: var(--sp-3);
+    padding: var(--sp-1) var(--sp-3);
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-control);
+    color: var(--text);
+    cursor: pointer;
+}
+
+.field input::-webkit-calendar-picker-indicator {
+    filter: invert(0.8);
+    cursor: pointer;
+}
+
+.field--error input,
+.field--error select,
+.field--error textarea {
+    border-color: var(--danger);
+}
+
+.errorlist {
+    font-size: var(--fs-sm);
+    color: var(--danger);
+}
+
+/* Autocomplétion : la liste de suggestions se superpose au champ */
+.autocomplete {
+    position: relative;
+}
+
+.autocomplete__list:empty {
+    display: none;
+}
+
+.autocomplete__list {
+    position: absolute;
+    z-index: 5;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    max-height: 280px;
+    overflow-y: auto;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-control);
+    box-shadow: var(--shadow-plate);
+}
+
+.autocomplete__list li a,
+.autocomplete__list li {
+    display: block;
+    color: var(--text);
+}
+
+.autocomplete__list li a {
+    padding: var(--sp-2) var(--sp-3);
+}
+
+.autocomplete__list li a:hover {
+    background: var(--surface-3);
+    text-decoration: none;
+}
+
+.autocomplete__list li:not(:has(a)) {
+    padding: var(--sp-2) var(--sp-3);
+    color: var(--text-3);
+}
+
+
+/* 7. Utilitaires ----------------------------------------------------------- */
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-3);
+}
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+.split {
+    display: grid;
+    grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+    gap: var(--sp-6);
+    align-items: start;
+}
+
+@media (max-width: 760px) {
+    .split {
+        grid-template-columns: 1fr;
+    }
+
+    .split > .plate {
+        max-width: 320px;
+    }
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+
+/* Compléments de composants ------------------------------------------------ */
+
+/* Deux colonnes égales (fiche emplacement, fiche pot) */
+.split--even {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+@media (max-width: 760px) {
+    .split--even {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Fieldset natif utilisé comme groupe de formulaire */
+fieldset.form__group {
+    margin: 0;
+    min-width: 0;
+}
+
+fieldset.form__group legend {
+    padding: 0;
+    float: left;
+    width: 100%;
+    margin-bottom: var(--sp-2);
+}
+
+fieldset.form__group legend + * {
+    clear: both;
+}
+
+/* Cellule espèce : vignette carrée et double nom */
+.species-cell {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    min-width: 240px;
+}
+
+.species-cell__thumb {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    padding: 2px;
+    background: #000;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-plate);
+}
+
+.species-cell__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.species-cell__thumb--empty {
+    display: grid;
+    place-items: center;
+    color: var(--text-3);
+}
+
+.species-cell__thumb--empty svg {
+    width: 22px;
+    height: 22px;
+}
+
+.species-cell .latin {
+    font-size: var(--fs-md);
+    font-weight: 400;
+}
+
+.table--species td {
+    vertical-align: middle;
+}
+
+/* Ligne de tableau entièrement cliquable */
+.table tr[data-href] {
+    cursor: pointer;
+}
+
+/* Barre de recherche du catalogue */
+.search {
+    display: flex;
+    gap: var(--sp-2);
+    width: min(480px, 100%);
+}
+
+.search input[type="search"] {
+    flex: 1;
+    min-width: 0;
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-control);
+    color: var(--text);
+    transition: border-color var(--t-fast);
+}
+
+.search input[type="search"]:hover {
+    border-color: var(--moss);
+}
+
+.search input[type="search"]:focus {
+    outline: none;
+    border-color: var(--leaf);
+    box-shadow: 0 0 0 3px var(--leaf-soft);
+}
+
+/* Planche cliquable : ouvre la visionneuse */
+.plate__zoom {
+    display: block;
+    color: inherit;
+}
+
+.plate__zoom:hover .plate__frame {
+    border-color: var(--moss);
+}
+
+.plate__zoom .plate__frame img {
+    cursor: zoom-in;
+}
+
+/* Visionneuse : l'image seule sur fond noir, dans son cadre de planche */
+.lightbox {
+    width: 100vw;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    margin: 0;
+    padding: var(--sp-5);
+    place-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: hidden;
+}
+
+.lightbox::backdrop {
+    background: rgba(0, 0, 0, 0.92);
+}
+
+/* display ici seulement : une boîte fermée doit rester hors de la page */
+.lightbox[open] {
+    display: grid;
+    animation: lightbox-in 220ms ease-out;
+}
+
+@keyframes lightbox-in {
+    from {
+        opacity: 0;
+        transform: scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.lightbox__figure {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-4);
+    max-width: 100%;
+    margin: 0;
+}
+
+.lightbox__frame {
+    position: relative;
+    padding: 8px;
+    background: #000;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-plate);
+    box-shadow: var(--shadow-plate);
+}
+
+.lightbox__frame::after {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border: 1px solid var(--line);
+    pointer-events: none;
+}
+
+.lightbox__frame img {
+    max-width: calc(100vw - 2 * var(--sp-5) - 16px);
+    max-height: calc(100dvh - 2 * var(--sp-5) - 16px - 3.5rem);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    cursor: zoom-out;
+}
+
+.lightbox__caption {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: var(--fs-lg);
+    color: var(--text-2);
+    text-align: center;
+}
+
+.lightbox__close {
+    position: absolute;
+    top: var(--sp-4);
+    right: var(--sp-4);
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    background: rgba(11, 18, 14, 0.7);
+    border: 1px solid var(--line-strong);
+    border-radius: 50%;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: color var(--t-fast), border-color var(--t-fast);
+}
+
+.lightbox__close:hover {
+    color: var(--text);
+    border-color: var(--moss);
+}
+
+.lightbox__close svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Menu contextuel (clic droit) */
+.context-menu {
+    position: fixed;
+    z-index: 20;
+    min-width: 220px;
+    padding: var(--sp-1);
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-control);
+    box-shadow: var(--shadow-plate);
+}
+
+.context-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+    padding: var(--sp-2) var(--sp-3);
+    background: none;
+    border: 0;
+    border-radius: var(--r-control);
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+}
+
+.context-menu__item svg {
+    width: 18px;
+    height: 18px;
+    color: var(--text-2);
+}
+
+.context-menu__item:hover {
+    background: var(--surface-3);
+}

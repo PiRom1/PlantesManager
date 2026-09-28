@@ -4,14 +4,24 @@
 
 {% block content %}
 
-    <p><a href="{% url 'list_pots' %}">&laquo; Mes pots</a></p>
+    <header class="page-head">
+        <div>
+            {% url 'list_pots' as back_url %}
+            {% include "includes/_back.html" with url=back_url label="Pots" %}
+            <h1 class="page-head__title">Nouveau pot</h1>
+        </div>
+    </header>
 
-    <h1>Nouveau pot</h1>
+    <div class="panel">
+        <form class="form" method="post">
+            {% csrf_token %}
+            {% include "Plantes/pots/_pot_fields.html" %}
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Créer</button>
-    </form>
+            <div class="form__actions">
+                <button class="btn btn--primary" type="submit">Créer le pot</button>
+                <a class="btn btn--ghost" href="{% url 'list_pots' %}">Annuler</a>
+            </div>
+        </form>
+    </div>
 
 {% endblock %}

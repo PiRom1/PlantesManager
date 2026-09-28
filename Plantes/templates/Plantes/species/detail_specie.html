@@ -1,149 +1,188 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ specie.vernacular_name }} — PlantesManager{% endblock %}
 
 {% block content %}
 
-    <p><a href="{% url 'list_species' %}">&laquo; Retour aux espèces</a></p>
-
-    <h1>{{ specie.vernacular_name }}</h1>
-    <p><em>{{ specie.scientific_name }}</em></p>
-
-    <p><a href="{% url 'add_plant' %}?specie={{ specie.id }}">J'ai cette plante chez moi</a></p>
-
-    {% if specie.image %}
-        <img src="{{ specie.image.url }}" alt="{{ specie.vernacular_name }}">
-    {% endif %}
-
-    {% if specie.description %}
-        <p>{{ specie.description }}</p>
-    {% endif %}
-
-
-    <h2>Identité</h2>
-
-    <dl>
-        <dt>Nom vernaculaire</dt>
-        <dd>{{ specie.vernacular_name }}</dd>
-
-        <dt>Nom vernaculaire (anglais)</dt>
-        <dd>{{ specie.vernacular_name_en|default_if_none:"—" }}</dd>
-
-        <dt>Nom scientifique</dt>
-        <dd><em>{{ specie.scientific_name }}</em></dd>
-
-        <dt>Clé GBIF</dt>
-        <dd>{{ specie.gbif_key|default_if_none:"—" }}</dd>
-    </dl>
+    <header class="page-head">
+        <div>
+            {% url 'list_species' as back_url %}
+            {% include "includes/_back.html" with url=back_url label="Catalogue d'espèces" %}
+            <h1 class="page-head__title">{{ specie.vernacular_name }}</h1>
+            <p class="page-head__sub">
+                <span class="latin">{{ specie.scientific_name }}</span>
+                {% if specie.vernacular_name_en %}<span class="quiet">, {{ specie.vernacular_name_en }} en anglais</span>{% endif %}
+            </p>
+        </div>
+        <div class="page-head__actions">
+            <a class="btn btn--primary" href="{% url 'add_plant' %}?specie={{ specie.id }}">J'ai cette plante chez moi</a>
+        </div>
+    </header>
 
 
-    <h2>Taxonomie</h2>
+    <div class="split">
 
-    <dl>
-        <dt>Classe</dt>
-        <dd>{{ specie.taxon_class|default_if_none:"—" }}</dd>
-
-        <dt>Ordre</dt>
-        <dd>{{ specie.taxon_order|default_if_none:"—" }}</dd>
-
-        <dt>Famille</dt>
-        <dd>{{ specie.taxon_family|default_if_none:"—" }}</dd>
-
-        <dt>Genre</dt>
-        <dd>{{ specie.taxon_genus|default_if_none:"—" }}</dd>
-    </dl>
-
-
-    <h2>Exigences</h2>
-
-    <dl>
-        <dt>Exposition</dt>
-        <dd>
-            {% if specie.min_exposure or specie.max_exposure %}
-                {{ specie.min_exposure|default_if_none:"?" }} → {{ specie.max_exposure|default_if_none:"?" }}
+        <figure class="plate">
+            {% if specie.image %}
+                <a class="plate__zoom" href="{{ specie.image.url }}" data-lightbox
+                   data-caption="{{ specie.vernacular_name }}, {{ specie.scientific_name }}">
+                    <div class="plate__frame">
+                        <img src="{{ specie.image.url }}" alt="{{ specie.vernacular_name }}">
+                    </div>
+                </a>
             {% else %}
-                —
+                <div class="plate__frame plate__frame--empty">
+                    {% include "includes/_icon_leaf.html" %}
+                </div>
             {% endif %}
-        </dd>
+            <figcaption class="plate__caption">
+                {{ specie.scientific_name }}{% if specie.taxon_family %}, {{ specie.taxon_family }}{% endif %}
+            </figcaption>
+        </figure>
 
-        <dt>Humidité</dt>
-        <dd>
-            {% if specie.humidity %}
-                {{ specie.humidity }} ({{ specie.humidity.min_HR }} – {{ specie.humidity.max_HR }} % HR)
-            {% else %}
-                —
+        <div class="stack">
+
+            {% if specie.description %}
+                <p class="prose">{{ specie.description }}</p>
             {% endif %}
-        </dd>
 
-        <dt>Tolérance à la sécheresse</dt>
-        <dd>
-            {% if specie.drought_tolerance %}
-                {{ specie.drought_tolerance }}
-                ({{ specie.drought_tolerance.tolerancy_days_allowed }} jours sans arrosage)
-            {% else %}
-                —
-            {% endif %}
-        </dd>
+            <section class="section panel">
+                <h2>Exigences</h2>
+                <dl class="legend">
+                    <dt>Exposition</dt>
+                    <dd>
+                        {% if specie.min_exposure or specie.max_exposure %}
+                            de {{ specie.min_exposure|default_if_none:"?" }} à {{ specie.max_exposure|default_if_none:"?" }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
 
-        <dt>Températures</dt>
-        <dd>
-            {% if specie.min_temp is not None or specie.max_temp is not None %}
-                {{ specie.min_temp|default_if_none:"?" }} °C → {{ specie.max_temp|default_if_none:"?" }} °C
-            {% else %}
-                —
-            {% endif %}
-        </dd>
+                    <dt>Humidité</dt>
+                    <dd>
+                        {% if specie.humidity %}
+                            {{ specie.humidity }}
+                            <span class="quiet">({{ specie.humidity.min_HR }} à {{ specie.humidity.max_HR }} % HR)</span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
 
-        <dt>Substrat conseillé</dt>
-        <dd>{{ specie.recommended_substrate|default_if_none:"—" }}</dd>
-    </dl>
+                    <dt>Sécheresse</dt>
+                    <dd>
+                        {% if specie.drought_tolerance %}
+                            {{ specie.drought_tolerance }}
+                            <span class="quiet">({{ specie.drought_tolerance.tolerancy_days_allowed }} jours sans arrosage)</span>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+
+                    <dt>Températures</dt>
+                    <dd>
+                        {% if specie.min_temp is not None or specie.max_temp is not None %}
+                            {{ specie.min_temp|default_if_none:"?" }} à {{ specie.max_temp|default_if_none:"?" }} °C
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+
+                    <dt>Substrat conseillé</dt>
+                    <dd>{{ specie.recommended_substrate|default_if_none:"—" }}</dd>
+                </dl>
+            </section>
+
+            <section class="section panel">
+                <h2>Taxonomie</h2>
+                <dl class="legend">
+                    <dt>Classe</dt>
+                    <dd>{{ specie.taxon_class|default_if_none:"—" }}</dd>
+
+                    <dt>Ordre</dt>
+                    <dd>{{ specie.taxon_order|default_if_none:"—" }}</dd>
+
+                    <dt>Famille</dt>
+                    <dd>{{ specie.taxon_family|default_if_none:"—" }}</dd>
+
+                    <dt>Genre</dt>
+                    <dd>{{ specie.taxon_genus|default_if_none:"—" }}</dd>
+
+                    <dt>Clé GBIF</dt>
+                    <dd>
+                        {% if specie.gbif_key %}
+                            <a href="https://www.gbif.org/species/{{ specie.gbif_key }}" rel="noopener">{{ specie.gbif_key }}</a>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+                </dl>
+            </section>
+
+        </div>
+
+    </div>
 
 
-    <h2>Règles de soin par défaut</h2>
+    <section class="section">
+        <div class="section__head">
+            <h2>Règles de soin par défaut</h2>
+            <span class="section__count">Valables pour chaque plante de l'espèce, sauf surcharge</span>
+        </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Action</th>
-                <th>Intervalle</th>
-                <th>Période</th>
-                <th>Détail</th>
-            </tr>
-        </thead>
+        {% if specie.care_rules.all %}
+            <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Cadence</th>
+                            <th>Période</th>
+                            <th>Détail</th>
+                        </tr>
+                    </thead>
 
-        <tbody>
-            {% for rule in specie.care_rules.all %}
-                <tr>
-                    <td>{{ rule.action }}</td>
-                    <td>tous les {{ rule.interval_days }} jour{{ rule.interval_days|pluralize }}</td>
-                    <td>du mois {{ rule.month_start }} au mois {{ rule.month_end }}</td>
-                    <td>{{ rule.description|default_if_none:"—" }}</td>
-                </tr>
+                    <tbody>
+                        {% for rule in specie.care_rules.all %}
+                            <tr>
+                                <td>{{ rule.action }}</td>
+                                <td>tous les {{ rule.interval_days }} jour{{ rule.interval_days|pluralize }}</td>
+                                <td>du mois {{ rule.month_start }} au mois {{ rule.month_end }}</td>
+                                <td>{{ rule.description|default_if_none:"—" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="quiet">Aucune règle de soin définie pour cette espèce.</p>
+        {% endif %}
+    </section>
 
+
+    <section class="section">
+        <div class="section__head">
+            <h2>Mes plantes de cette espèce</h2>
+            <span class="section__count">{{ my_plants|length }}</span>
+        </div>
+
+        <ul class="linklist panel panel--tight">
+            {% for plant in my_plants %}
+                <li>
+                    <a href="{% url 'detail_plant' plant.id %}">{{ plant }}</a>
+                    {% if plant.spot %}<span class="quiet">{{ plant.spot }}</span>{% endif %}
+                </li>
             {% empty %}
-                <tr>
-                    <td colspan="4">Aucune règle de soin définie pour cette espèce.</td>
-                </tr>
+                <li class="linklist__empty">
+                    Aucune plante de cette espèce dans ta collection.
+                    <a href="{% url 'add_plant' %}?specie={{ specie.id }}">Ajoute-la</a>.
+                </li>
             {% endfor %}
-        </tbody>
-    </table>
+        </ul>
+    </section>
 
+{% endblock %}
 
-    <h2>Mes plantes de cette espèce</h2>
-
-    <ul>
-        {% for plant in my_plants %}
-            <li>
-                <a href="{% url 'detail_plant' plant.id %}">{{ plant }}</a>
-                {% if plant.spot %} — {{ plant.spot }}{% endif %}
-            </li>
-
-        {% empty %}
-            <li>
-                Aucune plante de cette espèce dans ta collection.
-                <a href="{% url 'add_plant' %}?specie={{ specie.id }}">Ajoute-la</a>.
-            </li>
-        {% endfor %}
-    </ul>
-
+{% block scripts %}
+    <script src="{% static 'Plantes/js/lightbox.js' %}"></script>
 {% endblock %}

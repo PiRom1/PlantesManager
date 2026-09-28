@@ -1,0 +1,28 @@
+{# Champs du formulaire emplacement, groupés par thème. Attend `form`. #}
+{{ form.non_field_errors }}
+
+<div class="form__group">
+    <span class="form__group-title">Identité</span>
+    {% include "includes/_field.html" with field=form.name %}
+    {% include "includes/_field.html" with field=form.description %}
+</div>
+
+<div class="form__group">
+    <span class="form__group-title">Conditions</span>
+    <div class="form__row">
+        {% include "includes/_field.html" with field=form.exposure %}
+        {% include "includes/_field.html" with field=form.humidity %}
+    </div>
+    <div class="form__row">
+        {% include "includes/_field.html" with field=form.min_temp %}
+        {% include "includes/_field.html" with field=form.max_temp %}
+        {% include "includes/_field.html" with field=form.drying_factor %}
+    </div>
+</div>
+
+<div class="form__group">
+    <span class="form__group-title">Équipements</span>
+    {% include "includes/_field.html" with field=form.has_additional_light %}
+    {% include "includes/_field.html" with field=form.has_heater %}
+    {% include "includes/_field.html" with field=form.has_moister %}
+</div>

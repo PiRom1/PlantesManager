@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from Plantes.forms import PlantForm, PlantHistoryForm, PotForm, SpotForm
+from Plantes.forms import PlantForm, PlantHistoryForm, PlantImageForm, PotForm, SpotForm
 from Plantes.models import Action, DetailFieldType, Plant, PlantHistory, Pot, Specie, Spot
 
 
@@ -189,3 +189,22 @@ def edit_plant(request, id_plant: int):
                'spot_form' : SpotForm(), 'pot_form' : PotForm()}
 
     return render(request, url, context)
+
+
+
+@login_required
+def change_plant_image(request, id_plant: int):
+    """
+    Remplace la photo d'une plante depuis sa fiche (clic droit sur la planche).
+    Ne touche à aucun autre champ.
+    """
+
+    plant = get_object_or_404(Plant, id = id_plant, user = request.user)
+
+    if request.method == 'POST':
+        form = PlantImageForm(request.POST, request.FILES, instance=plant)
+
+        if form.is_valid():
+            form.save()
+
+    return redirect('detail_plant', id_plant=plant.id)

@@ -14,6 +14,7 @@ urlpatterns = [
     path('plant/add/', plant_views.add_plant, name='add_plant'),
     path('plant/<int:id_plant>/', plant_views.detail_plant, name='detail_plant'),
     path('plant/<int:id_plant>/edit/', plant_views.edit_plant, name='edit_plant'),
+    path('plant/<int:id_plant>/image/', plant_views.change_plant_image, name='change_plant_image'),
 
     # Spots
     path('spots/', spot_views.list_spots, name='list_spots'),

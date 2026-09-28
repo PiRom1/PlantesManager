@@ -4,10 +4,19 @@
 
 {% block content %}
 
-    <p><a href="{% url 'detail_plant' plant.id %}">&laquo; Retour à la fiche</a></p>
+    <header class="page-head">
+        <div>
+            {% url 'detail_plant' plant.id as back_url %}
+            {% include "includes/_back.html" with url=back_url label="Retour à la fiche" %}
+            <h1 class="page-head__title">Modifier {{ plant }}</h1>
+            {% if plant.specie %}
+                <p class="page-head__sub latin">{{ plant.specie.scientific_name }}</p>
+            {% endif %}
+        </div>
+    </header>
 
-    <h1>Modifier {{ plant }}</h1>
-
-    {% include "Plantes/plants/_plant_form.html" with submit_label="Enregistrer" %}
+    <div class="panel">
+        {% include "Plantes/plants/_plant_form.html" with submit_label="Enregistrer les modifications" cancel_url=back_url %}
+    </div>
 
 {% endblock %}

@@ -21,10 +21,19 @@ def list_species(request):
 
     url = 'Plantes/species/list_species.html'
 
+    # Filtre de la barre de recherche : /species/?q=monstera
+    query = request.GET.get('q', '').strip()
+
     species = Specie.objects.all().order_by('vernacular_name')
+
+    if query:
+        species = species.filter(
+            Q(vernacular_name__icontains=query) | Q(scientific_name__icontains=query)
+        )
+
     page = Paginator(species, SPECIES_PER_PAGE).get_page(request.GET.get('page'))
 
-    context = {'all_species' : page}
+    context = {'all_species' : page, 'query' : query}
 
     return render(request, url, context)
 

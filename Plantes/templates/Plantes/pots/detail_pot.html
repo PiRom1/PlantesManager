@@ -4,27 +4,49 @@
 
 {% block content %}
 
-    <p><a href="{% url 'list_pots' %}">&laquo; Mes pots</a></p>
+    <header class="page-head">
+        <div>
+            {% url 'list_pots' as back_url %}
+            {% include "includes/_back.html" with url=back_url label="Pots" %}
+            <h1 class="page-head__title">{{ pot.denomination }}</h1>
+            <p class="page-head__sub">
+                {{ pot.material|default_if_none:"Matériau non renseigné" }}{% if pot.volume_litre %}, {{ pot.volume_litre }} L{% endif %}
+            </p>
+        </div>
+    </header>
 
-    <h1>{{ pot.denomination }}</h1>
+    <section class="section panel">
+        <div class="section__head">
+            <h2>Carte du pot</h2>
+            <span class="section__count">{{ pot.plant_set.count }} plante{{ pot.plant_set.count|pluralize }}</span>
+        </div>
 
-    <h2>Modifier</h2>
+        <form class="form" method="post">
+            {% csrf_token %}
+            {% include "Plantes/pots/_pot_fields.html" %}
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Enregistrer</button>
-    </form>
+            <div class="form__actions">
+                <button class="btn btn--primary" type="submit">Enregistrer</button>
+                <a class="btn btn--ghost" href="{% url 'list_pots' %}">Annuler</a>
+            </div>
+        </form>
+    </section>
 
-    <h2>Plantes dans ce pot</h2>
 
-    <ul>
-        {% for plant in pot.plant_set.all %}
-            <li><a href="{% url 'detail_plant' plant.id %}">{{ plant }}</a></li>
+    <section class="section">
+        <div class="section__head">
+            <h2>Plantes dans ce pot</h2>
+        </div>
 
-        {% empty %}
-            <li>Aucune plante dans ce pot.</li>
-        {% endfor %}
-    </ul>
+        {% if pot.plant_set.all %}
+            <ul class="grid">
+                {% for plant in pot.plant_set.all %}
+                    <li>{% include "Plantes/plants/_specimen_card.html" with plant=plant %}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="quiet">Aucune plante dans ce pot. Choisis-le dans la fiche d'une plante pour l'y installer.</p>
+        {% endif %}
+    </section>
 
 {% endblock %}

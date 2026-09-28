@@ -1,45 +1,57 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Mes pots — PlantesManager{% endblock %}
 
 {% block content %}
 
-    <h1>Mes pots</h1>
+    <header class="page-head">
+        <div>
+            <h1 class="page-head__title">Pots</h1>
+            <p class="page-head__sub">Tes contenants, avec leur matériau et leur vitesse de séchage.</p>
+        </div>
+        <div class="page-head__actions">
+            <a class="btn btn--primary" href="{% url 'add_pot' %}">Ajouter un pot</a>
+        </div>
+    </header>
 
-    <p><a href="{% url 'add_pot' %}">+ Ajouter un pot</a></p>
+    {% if all_pots %}
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Dénomination</th>
+                        <th>Matériau</th>
+                        <th>Volume</th>
+                        <th>Séchage</th>
+                        <th>Plantes</th>
+                    </tr>
+                </thead>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Dénomination</th>
-                <th>Matériau</th>
-                <th>Volume</th>
-                <th>Facteur de séchage</th>
-                <th>Plantes</th>
-                <th></th>
-            </tr>
-        </thead>
+                <tbody>
+                    {% for pot in all_pots %}
+                        <tr data-href="{% url 'detail_pot' pot.id %}">
+                            <td><a href="{% url 'detail_pot' pot.id %}">{{ pot.denomination }}</a></td>
+                            <td>{{ pot.material|default_if_none:"—" }}</td>
+                            <td class="is-num">{% if pot.volume_litre %}{{ pot.volume_litre }} L{% else %}—{% endif %}</td>
+                            <td class="is-num">× {{ pot.drying_factor }}</td>
+                            <td class="is-num">{{ pot.plant_set.count }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-        <tbody>
-            {% for pot in all_pots %}
-                <tr>
-                    <td><a href="{% url 'detail_pot' pot.id %}">{{ pot.denomination }}</a></td>
-                    <td>{{ pot.material|default_if_none:"—" }}</td>
-                    <td>{% if pot.volume_litre %}{{ pot.volume_litre }} L{% else %}—{% endif %}</td>
-                    <td>{{ pot.drying_factor }}</td>
-                    <td>{{ pot.plant_set.count }}</td>
-                    <td><a href="{% url 'detail_pot' pot.id %}">Modifier</a></td>
-                </tr>
+    {% else %}
+        <div class="empty">
+            {% include "includes/_icon_leaf.html" %}
+            <p>Aucun pot pour l'instant. Décris tes contenants une fois, tu les retrouveras dans la fiche de chaque plante.</p>
+            <a class="btn btn--primary" href="{% url 'add_pot' %}">Créer le premier</a>
+        </div>
+    {% endif %}
 
-            {% empty %}
-                <tr>
-                    <td colspan="6">
-                        Aucun pot.
-                        <a href="{% url 'add_pot' %}">Crée le premier</a>.
-                    </td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+{% endblock %}
 
+{% block scripts %}
+    <script src="{% static 'Plantes/js/clickable_rows.js' %}"></script>
 {% endblock %}

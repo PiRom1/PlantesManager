@@ -3,236 +3,330 @@
 
 {% block title %}{{ plant }} — PlantesManager{% endblock %}
 
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'Plantes/css/plant.css' %}">
+{% endblock %}
+
 {% block content %}
 
-    <p><a href="{% url 'list_plants' %}">&laquo; Mes plantes</a></p>
-
-    <h1>{{ plant }}</h1>
-
-    <p><a href="{% url 'edit_plant' plant.id %}">Modifier cette plante</a></p>
-
-    {% if plant.image %}
-        <img src="{{ plant.image.url }}" alt="{{ plant }}">
-    {% endif %}
-
-
-    <h2>Identité</h2>
-
-    <dl>
-        <dt>Espèce</dt>
-        <dd>
+    <header class="page-head">
+        <div>
+            {% url 'list_plants' as back_url %}
+            {% include "includes/_back.html" with url=back_url label="Mes plantes" %}
+            <h1 class="page-head__title">{{ plant }}</h1>
             {% if plant.specie %}
-                <a href="{% url 'detail_specie' plant.specie.id %}">{{ plant.specie }}</a>
+                <p class="page-head__sub">
+                    <a href="{% url 'detail_specie' plant.specie.id %}">{{ plant.specie.vernacular_name }}</a>
+                    <span class="latin">{{ plant.specie.scientific_name }}</span>
+                    {% if plant.cultivar %}‘{{ plant.cultivar }}’{% endif %}
+                </p>
+            {% endif %}
+        </div>
+        <div class="page-head__actions">
+            <a class="btn" href="{% url 'edit_plant' plant.id %}">Modifier la fiche</a>
+            <button class="btn btn--primary" type="button" data-opens="dialog-history">Noter une action</button>
+        </div>
+    </header>
+
+
+    {# Carte d'identité : la planche et l'essentiel, côte à côte #}
+    <section class="idcard panel">
+
+        <figure class="plate idcard__plate" data-context-menu="menu-plant-image">
+            {% if plant.image %}
+                <a class="plate__zoom" href="{{ plant.image.url }}" data-lightbox data-caption="{{ plant }}">
+                    <div class="plate__frame">
+                        <img src="{{ plant.image.url }}" alt="{{ plant }}">
+                    </div>
+                </a>
+            {% elif plant.specie.image %}
+                <a class="plate__zoom" href="{{ plant.specie.image.url }}" data-lightbox
+                   data-caption="{{ plant.specie.vernacular_name }}, {{ plant.specie.scientific_name }}">
+                    <div class="plate__frame">
+                        <img src="{{ plant.specie.image.url }}" alt="{{ plant.specie.vernacular_name }}">
+                    </div>
+                </a>
             {% else %}
-                —
+                <div class="plate__frame plate__frame--empty">
+                    {% include "includes/_icon_leaf.html" %}
+                </div>
             {% endif %}
-        </dd>
+            <figcaption class="plate__caption">
+                {% if plant.image %}
+                    {{ plant }}{% if plant.state %}, {{ plant.state|lower }}{% endif %}
+                {% elif plant.specie.image %}
+                    Planche de l'espèce, en attendant une photo
+                {% else %}
+                    Pas encore de photo
+                {% endif %}
+            </figcaption>
+        </figure>
 
-        <dt>Cultivar</dt>
-        <dd>{{ plant.cultivar|default_if_none:"—" }}</dd>
+        <div class="idcard__body">
+            <h2>Identité</h2>
+            <dl class="legend">
+                <dt>Espèce</dt>
+                <dd>
+                    {% if plant.specie %}
+                        <a href="{% url 'detail_specie' plant.specie.id %}">{{ plant.specie.vernacular_name }}</a>
+                        <span class="latin">{{ plant.specie.scientific_name }}</span>
+                    {% else %}
+                        <span class="quiet">Non renseignée</span>
+                    {% endif %}
+                </dd>
 
-        <dt>Surnom</dt>
-        <dd>{{ plant.surname|default_if_none:"—" }}</dd>
+                <dt>Famille</dt>
+                <dd>{{ plant.specie.taxon_family|default_if_none:"—" }}</dd>
 
-        <dt>État</dt>
-        <dd>{{ plant.state|default_if_none:"—" }}</dd>
+                <dt>Cultivar</dt>
+                <dd>{{ plant.cultivar|default_if_none:"—" }}</dd>
 
-        <dt>Plante mère</dt>
-        <dd>
-            {% if plant.father %}
-                <a href="{% url 'detail_plant' plant.father.id %}">{{ plant.father }}</a>
-            {% else %}
-                —
-            {% endif %}
-        </dd>
-    </dl>
+                <dt>Surnom</dt>
+                <dd>{{ plant.surname|default_if_none:"—" }}</dd>
 
+                <dt>État</dt>
+                <dd>{% if plant.state %}<span class="chip chip--leaf">{{ plant.state }}</span>{% else %}—{% endif %}</dd>
 
-    <h2>Conditions de culture</h2>
+                <dt>Plante mère</dt>
+                <dd>
+                    {% if plant.father %}
+                        <a href="{% url 'detail_plant' plant.father.id %}">{{ plant.father }}</a>
+                    {% else %}
+                        —
+                    {% endif %}
+                </dd>
 
-    <dl>
-        <dt>Emplacement</dt>
-        <dd>
-            {% if plant.spot %}
-                <a href="{% url 'detail_spot' plant.spot.id %}">{{ plant.spot }}</a>
-            {% else %}
-                —
-            {% endif %}
-        </dd>
+                <dt>Dans la collection</dt>
+                <dd>depuis le {{ plant.creation_date|date:"d/m/Y" }}</dd>
+            </dl>
+        </div>
 
-        <dt>Pot</dt>
-        <dd>
-            {% if plant.pot %}
-                <a href="{% url 'detail_pot' plant.pot.id %}">{{ plant.pot }}</a>
-            {% else %}
-                —
-            {% endif %}
-        </dd>
-
-        <dt>Substrat</dt>
-        <dd>{{ plant.substrate|default_if_none:"—" }}</dd>
-    </dl>
-
-
-    <h2>Acquisition</h2>
-
-    <dl>
-        <dt>Date</dt>
-        <dd>{{ plant.acquisition_date|date:"d/m/Y"|default:"—" }}</dd>
-
-        <dt>Prix</dt>
-        <dd>{% if plant.acquisition_price %}{{ plant.acquisition_price }} €{% else %}—{% endif %}</dd>
-
-        <dt>Origine</dt>
-        <dd>{{ plant.origin|default_if_none:"—" }}</dd>
-
-        <dt>Ajoutée le</dt>
-        <dd>{{ plant.creation_date|date:"d/m/Y à H:i" }}</dd>
-
-        <dt>Modifiée le</dt>
-        <dd>{{ plant.last_modification_date|date:"d/m/Y à H:i"|default:"—" }}</dd>
-    </dl>
+    </section>
 
 
-    <h2>Journal d'entretien</h2>
+    <div class="split split--even">
 
-    <h3>Noter une action</h3>
+        <section class="section panel">
+            <h2>Conditions de culture</h2>
+            <dl class="legend">
+                <dt>Emplacement</dt>
+                <dd>
+                    {% if plant.spot %}
+                        <a href="{% url 'detail_spot' plant.spot.id %}">{{ plant.spot }}</a>
+                    {% else %}
+                        —
+                    {% endif %}
+                </dd>
 
-    <form method="post" enctype="multipart/form-data">
-        {% csrf_token %}
+                <dt>Pot</dt>
+                <dd>
+                    {% if plant.pot %}
+                        <a href="{% url 'detail_pot' plant.pot.id %}">{{ plant.pot }}</a>
+                    {% else %}
+                        —
+                    {% endif %}
+                </dd>
 
-        {{ history_form.non_field_errors }}
+                <dt>Substrat</dt>
+                <dd>{{ plant.substrate|default_if_none:"—" }}</dd>
+            </dl>
+        </section>
 
-        <p>
-            {{ history_form.action.label_tag }} {{ history_form.action }} {{ history_form.action.errors }}
-        </p>
+        <section class="section panel">
+            <h2>Acquisition</h2>
+            <dl class="legend">
+                <dt>Date</dt>
+                <dd>{{ plant.acquisition_date|date:"d/m/Y"|default:"—" }}</dd>
 
-        {% for action in actions %}
-            {% if action.detail_fields %}
-                <fieldset data-action-fields="{{ action.id }}" hidden>
-                    <legend>{{ action.name }}</legend>
+                <dt>Prix</dt>
+                <dd>{% if plant.acquisition_price %}{{ plant.acquisition_price }} €{% else %}—{% endif %}</dd>
 
-                    {% for field in action.detail_fields %}
-                        {% with input_id="detail_"|add:action.code|add:"_"|add:field.name %}
-                            <p>
-                                <label for="{{ input_id }}">{{ field.label }}</label>
+                <dt>Origine</dt>
+                <dd>{{ plant.origin|default_if_none:"—" }}</dd>
 
-                                {% if field.type == 'select' %}
-                                    <select name="{{ input_id }}" id="{{ input_id }}">
-                                        <option value="">—</option>
-                                        {% for value, label in field.choices %}
-                                            <option value="{{ value }}">{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
+                <dt>Modifiée le</dt>
+                <dd>{{ plant.last_modification_date|date:"d/m/Y à H:i"|default:"—" }}</dd>
+            </dl>
+        </section>
 
-                                {% elif field.type == 'boolean' %}
-                                    <input type="checkbox" name="{{ input_id }}" id="{{ input_id }}">
-
-                                {% elif field.type == 'integer' %}
-                                    <input type="number" step="1" name="{{ input_id }}" id="{{ input_id }}">
-
-                                {% elif field.type == 'decimal' %}
-                                    <input type="number" step="any" name="{{ input_id }}" id="{{ input_id }}">
-
-                                {% else %}
-                                    <input type="text" name="{{ input_id }}" id="{{ input_id }}">
-                                {% endif %}
-                            </p>
-                        {% endwith %}
-                    {% endfor %}
-                </fieldset>
-            {% endif %}
-        {% endfor %}
-
-        <p>
-            {{ history_form.date.label_tag }} {{ history_form.date }} {{ history_form.date.errors }}
-        </p>
-
-        <p>
-            {{ history_form.comment.label_tag }} {{ history_form.comment }} {{ history_form.comment.errors }}
-        </p>
-
-        <p>
-            {{ history_form.image.label_tag }} {{ history_form.image }} {{ history_form.image.errors }}
-        </p>
-
-        <p>
-            {{ history_form.height.label_tag }} {{ history_form.height }} {{ history_form.height.errors }}
-            {{ history_form.width.label_tag }} {{ history_form.width }} {{ history_form.width.errors }}
-            {{ history_form.n_leaves.label_tag }} {{ history_form.n_leaves }} {{ history_form.n_leaves.errors }}
-        </p>
-
-        <button type="submit">Enregistrer dans le journal</button>
-    </form>
-
-    <script src="{% static 'Plantes/js/care_detail.js' %}"></script>
+    </div>
 
 
-    <h3>Historique</h3>
+    <section class="section" id="journal">
 
-    <table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Action</th>
-                <th>Commentaire</th>
-                <th>Mesures</th>
-                <th>Détail</th>
-                <th>Photo</th>
-            </tr>
-        </thead>
+        <div class="section__head">
+            <div class="row">
+                <h2>Journal d'entretien</h2>
+                <span class="section__count">{{ history|length }} entrée{{ history|length|pluralize }}</span>
+            </div>
+            <button class="btn btn--small" type="button" data-opens="dialog-history">Noter une action</button>
+        </div>
 
-        <tbody>
+        <ol class="timeline">
             {% for entry in history %}
-                <tr>
-                    <td>{{ entry.date|date:"d/m/Y à H:i" }}</td>
+                <li class="timeline__entry">
+                    <time class="timeline__date" datetime="{{ entry.date|date:'c' }}">
+                        <span class="timeline__day">{{ entry.date|date:"j" }}</span>
+                        <span class="timeline__month">{{ entry.date|date:"M Y" }}</span>
+                        <span class="timeline__hour">{{ entry.date|date:"H:i" }}</span>
+                    </time>
 
-                    <td>{{ entry.action|default_if_none:"—" }}</td>
+                    <div class="timeline__body">
+                        <div class="timeline__head">
+                            <span class="timeline__action">{{ entry.action|default_if_none:"Observation" }}</span>
 
-                    <td>{{ entry.comment|default_if_none:"—"|linebreaksbr }}</td>
+                            {% if entry.height %}<span class="chip">hauteur {{ entry.height }} cm</span>{% endif %}
+                            {% if entry.width %}<span class="chip">largeur {{ entry.width }} cm</span>{% endif %}
+                            {% if entry.n_leaves %}<span class="chip">{{ entry.n_leaves }} feuille{{ entry.n_leaves|pluralize }}</span>{% endif %}
+                        </div>
 
-                    <td>
-                        {% if entry.height %}<span>hauteur {{ entry.height }} cm</span>{% endif %}
-                        {% if entry.width %}<span>largeur {{ entry.width }} cm</span>{% endif %}
-                        {% if entry.n_leaves %}<span>{{ entry.n_leaves }} feuille{{ entry.n_leaves|pluralize }}</span>{% endif %}
-                        {% if not entry.height and not entry.width and not entry.n_leaves %}—{% endif %}
-                    </td>
-
-                    <td>
-                        {% for label, value in entry.detail_summary %}
-                            <span>{{ label }} : {{ value }}</span>
-                        {% empty %}
-                            —
-                        {% endfor %}
-                    </td>
-
-                    <td>
-                        {% if entry.image %}
-                            <a href="{{ entry.image.url }}">voir</a>
-                        {% else %}
-                            —
+                        {% if entry.detail_summary %}
+                            <dl class="timeline__detail">
+                                {% for label, value in entry.detail_summary %}
+                                    <div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>
+                                {% endfor %}
+                            </dl>
                         {% endif %}
-                    </td>
-                </tr>
+
+                        {% if entry.comment %}
+                            <p class="timeline__comment">{{ entry.comment|linebreaksbr }}</p>
+                        {% endif %}
+
+                        {% if entry.image %}
+                            <a class="timeline__photo" href="{{ entry.image.url }}" data-lightbox
+                               data-caption="{{ plant }}, le {{ entry.date|date:'d/m/Y' }}">
+                                <img src="{{ entry.image.url }}" alt="Photo du {{ entry.date|date:'d/m/Y' }}" loading="lazy">
+                            </a>
+                        {% endif %}
+                    </div>
+                </li>
 
             {% empty %}
-                <tr>
-                    <td colspan="6">Aucune action enregistrée pour cette plante.</td>
-                </tr>
+                <li class="empty">
+                    {% include "includes/_icon_leaf.html" %}
+                    <p>Rien dans le journal pour l'instant. Note un arrosage, un rempotage ou une simple observation : chaque entrée garde sa date, ses mesures et sa photo.</p>
+                    <button class="btn btn--primary" type="button" data-opens="dialog-history">Noter une action</button>
+                </li>
             {% endfor %}
-        </tbody>
-    </table>
+        </ol>
+
+    </section>
 
 
-    <h2>Boutures issues de cette plante</h2>
+    <section class="section">
+        <div class="section__head">
+            <h2>Boutures issues de cette plante</h2>
+        </div>
 
-    <ul>
-        {% for child in plant.children.all %}
-            <li><a href="{% url 'detail_plant' child.id %}">{{ child }}</a></li>
+        <ul class="linklist panel panel--tight">
+            {% for child in plant.children.all %}
+                <li>
+                    <a href="{% url 'detail_plant' child.id %}">{{ child }}</a>
+                    {% if child.state %}<span class="chip">{{ child.state }}</span>{% endif %}
+                </li>
+            {% empty %}
+                <li class="linklist__empty">Aucune bouture. Pour en déclarer une, ajoute une plante en indiquant celle-ci comme plante mère.</li>
+            {% endfor %}
+        </ul>
+    </section>
 
-        {% empty %}
-            <li>Aucune bouture.</li>
-        {% endfor %}
-    </ul>
 
+    {# Clic droit sur la planche : menu pour changer la photo, envoi dès le fichier choisi #}
+    <div class="context-menu" id="menu-plant-image" hidden>
+        <button class="context-menu__item" type="button" data-picks-file="plant-image-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="1.5"/>
+                <circle cx="9" cy="10" r="1.6"/>
+                <path d="M21 16l-5-5-8 8"/>
+            </svg>
+            Changer la photo de la plante
+        </button>
+    </div>
+
+    <form method="post" action="{% url 'change_plant_image' plant.id %}" enctype="multipart/form-data" hidden>
+        {% csrf_token %}
+        <input type="file" name="image" id="plant-image-input" accept="image/*" data-submits-on-change>
+    </form>
+
+
+    {# Formulaire du journal : dans une boîte, rouverte d'office si le POST a échoué #}
+    <dialog class="dialog--wide" id="dialog-history"{% if history_form.errors %} data-open-on-load{% endif %}>
+        <div class="dialog__head">
+            <h2>Noter une action</h2>
+            <span class="quiet">{{ plant }}</span>
+        </div>
+
+        <form class="form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            {{ history_form.non_field_errors }}
+
+            <div class="form__row">
+                {% include "includes/_field.html" with field=history_form.action %}
+                {% include "includes/_field.html" with field=history_form.date %}
+            </div>
+
+            {% for action in actions %}
+                {% if action.detail_fields %}
+                    <fieldset class="form__group" data-action-fields="{{ action.id }}" hidden>
+                        <legend class="form__group-title">Détail de l'action : {{ action.name|lower }}</legend>
+
+                        <div class="form__row">
+                            {% for field in action.detail_fields %}
+                                {% with input_id="detail_"|add:action.code|add:"_"|add:field.name %}
+                                    <div class="field{% if field.type == 'boolean' %} field--check{% endif %}">
+                                        <label class="field__label" for="{{ input_id }}">{{ field.label }}</label>
+
+                                        {% if field.type == 'select' %}
+                                            <select name="{{ input_id }}" id="{{ input_id }}">
+                                                <option value="">—</option>
+                                                {% for value, label in field.choices %}
+                                                    <option value="{{ value }}">{{ label }}</option>
+                                                {% endfor %}
+                                            </select>
+
+                                        {% elif field.type == 'boolean' %}
+                                            <input type="checkbox" name="{{ input_id }}" id="{{ input_id }}">
+
+                                        {% elif field.type == 'integer' %}
+                                            <input type="number" step="1" name="{{ input_id }}" id="{{ input_id }}">
+
+                                        {% elif field.type == 'decimal' %}
+                                            <input type="number" step="any" name="{{ input_id }}" id="{{ input_id }}">
+
+                                        {% else %}
+                                            <input type="text" name="{{ input_id }}" id="{{ input_id }}">
+                                        {% endif %}
+                                    </div>
+                                {% endwith %}
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                {% endif %}
+            {% endfor %}
+
+            {% include "includes/_field.html" with field=history_form.comment %}
+
+            <div class="form__row">
+                {% include "includes/_field.html" with field=history_form.height %}
+                {% include "includes/_field.html" with field=history_form.width %}
+                {% include "includes/_field.html" with field=history_form.n_leaves %}
+            </div>
+
+            {% include "includes/_field.html" with field=history_form.image %}
+
+            <div class="dialog__actions">
+                <button class="btn btn--ghost" type="button" onclick="this.closest('dialog').close()">Annuler</button>
+                <button class="btn btn--primary" type="submit">Enregistrer dans le journal</button>
+            </div>
+        </form>
+    </dialog>
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'Plantes/js/open_dialog.js' %}"></script>
+    <script src="{% static 'Plantes/js/care_detail.js' %}"></script>
+    <script src="{% static 'Plantes/js/lightbox.js' %}"></script>
+    <script src="{% static 'Plantes/js/context_menu.js' %}"></script>
 {% endblock %}

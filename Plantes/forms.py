@@ -50,6 +50,15 @@ class PlantForm(forms.ModelForm):
         }
 
 
+class PlantImageForm(forms.ModelForm):
+    """Changement de la seule photo d'une plante, depuis sa fiche."""
+
+    class Meta:
+        model = Plant
+        fields = ['image']
+        labels = {'image': 'Photo'}
+
+
 class SpotForm(forms.ModelForm):
     """Emplacement : un endroit de la maison aux conditions homogènes."""
 

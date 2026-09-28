@@ -1,85 +1,134 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}Espèces — PlantesManager{% endblock %}
+{% block title %}Catalogue d'espèces — PlantesManager{% endblock %}
 
 {% block content %}
 
-    <h1>Espèces</h1>
+    <header class="page-head">
+        <div>
+            <h1 class="page-head__title">Catalogue d'espèces</h1>
+            <p class="page-head__sub">
+                {% if query %}
+                    {{ all_species.paginator.count }} espèce{{ all_species.paginator.count|pluralize }} pour « {{ query }} »
+                {% else %}
+                    {{ all_species.paginator.count }} espèce{{ all_species.paginator.count|pluralize }} d'intérieur, d'après GBIF
+                {% endif %}
+            </p>
+        </div>
+        <div class="page-head__actions">
+            <a class="btn" href="{% url 'add_plant' %}">Ajouter une plante</a>
+        </div>
+    </header>
 
-    <p>
-        {{ all_species.paginator.count }} espèce{{ all_species.paginator.count|pluralize }} en catalogue —
-        page {{ all_species.number }} sur {{ all_species.paginator.num_pages }}
-    </p>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Nom vernaculaire</th>
-                <th>Nom scientifique</th>
-                <th>Famille</th>
-                <th>Genre</th>
-                <th>Exposition</th>
-                <th>Humidité</th>
-                <th>Tolérance sécheresse</th>
-                <th>Températures</th>
-                <th>Substrat conseillé</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            {% for specie in all_species %}
-                <tr>
-                    <td>
-                        <a href="{% url 'detail_specie' specie.id %}">{{ specie.vernacular_name }}</a>
-                    </td>
-
-                    <td><em>{{ specie.scientific_name }}</em></td>
-
-                    <td>{{ specie.taxon_family|default_if_none:"—" }}</td>
-
-                    <td>{{ specie.taxon_genus|default_if_none:"—" }}</td>
-
-                    <td>
-                        {% if specie.min_exposure or specie.max_exposure %}
-                            {{ specie.min_exposure|default_if_none:"?" }} → {{ specie.max_exposure|default_if_none:"?" }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-
-                    <td>{{ specie.humidity|default_if_none:"—" }}</td>
-
-                    <td>{{ specie.drought_tolerance|default_if_none:"—" }}</td>
-
-                    <td>
-                        {% if specie.min_temp is not None or specie.max_temp is not None %}
-                            {{ specie.min_temp|default_if_none:"?" }}°C → {{ specie.max_temp|default_if_none:"?" }}°C
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-
-                    <td>{{ specie.recommended_substrate|default_if_none:"—" }}</td>
-                </tr>
-
-            {% empty %}
-                <tr>
-                    <td colspan="9">Aucune espèce en base.</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <nav>
-        {% if all_species.has_previous %}
-            <a href="?page=1">&laquo; Première</a>
-            <a href="?page={{ all_species.previous_page_number }}">Précédente</a>
+    <form class="search" method="get" data-search-form role="search">
+        <label class="sr-only" for="species-q">Rechercher une espèce</label>
+        <input type="search" id="species-q" name="q" value="{{ query }}"
+               placeholder="Nom commun ou latin" autocomplete="off">
+        <button class="btn" type="submit">Rechercher</button>
+        {% if query %}
+            <a class="btn btn--ghost" href="{% url 'list_species' %}">Effacer</a>
         {% endif %}
+    </form>
 
-        {% if all_species.has_next %}
-            <a href="?page={{ all_species.next_page_number }}">Suivante</a>
-            <a href="?page={{ all_species.paginator.num_pages }}">Dernière &raquo;</a>
-        {% endif %}
-    </nav>
+    {% if all_species %}
+        <div class="table-wrap">
+            <table class="table table--species">
+                <thead>
+                    <tr>
+                        <th>Espèce</th>
+                        <th>Famille</th>
+                        <th>Exposition</th>
+                        <th>Humidité</th>
+                        <th>Sécheresse</th>
+                        <th>Températures</th>
+                        <th>Substrat</th>
+                    </tr>
+                </thead>
 
+                <tbody>
+                    {% for specie in all_species %}
+                        <tr>
+                            <td>
+                                <a class="species-cell" href="{% url 'detail_specie' specie.id %}">
+                                    <span class="species-cell__thumb{% if not specie.image %} species-cell__thumb--empty{% endif %}">
+                                        {% if specie.image %}
+                                            <img src="{{ specie.image.url }}" alt="" loading="lazy">
+                                        {% else %}
+                                            {% include "includes/_icon_leaf.html" %}
+                                        {% endif %}
+                                    </span>
+                                    <span>
+                                        {{ specie.vernacular_name }}<br>
+                                        <span class="latin">{{ specie.scientific_name }}</span>
+                                    </span>
+                                </a>
+                            </td>
+
+                            <td>
+                                {{ specie.taxon_family|default_if_none:"—" }}
+                                {% if specie.taxon_genus %}<br><span class="quiet">{{ specie.taxon_genus }}</span>{% endif %}
+                            </td>
+
+                            <td>
+                                {% if specie.min_exposure or specie.max_exposure %}
+                                    {{ specie.min_exposure|default_if_none:"?" }} à {{ specie.max_exposure|default_if_none:"?" }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+
+                            <td>{{ specie.humidity|default_if_none:"—" }}</td>
+
+                            <td>{{ specie.drought_tolerance|default_if_none:"—" }}</td>
+
+                            <td class="is-num">
+                                {% if specie.min_temp is not None or specie.max_temp is not None %}
+                                    {{ specie.min_temp|default_if_none:"?" }} à {{ specie.max_temp|default_if_none:"?" }} °C
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+
+                            <td>{{ specie.recommended_substrate|default_if_none:"—" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <nav class="pager" aria-label="Pagination">
+            <span class="quiet">
+                {% if query %}{{ all_species.paginator.count }} résultat{{ all_species.paginator.count|pluralize }}, {% endif %}page {{ all_species.number }} sur {{ all_species.paginator.num_pages }}
+            </span>
+
+            <span class="pager__links">
+                {% if all_species.has_previous %}
+                    <a class="btn btn--small" href="?q={{ query|urlencode }}&page=1">Première</a>
+                    <a class="btn btn--small" href="?q={{ query|urlencode }}&page={{ all_species.previous_page_number }}">Précédente</a>
+                {% endif %}
+
+                {% if all_species.has_next %}
+                    <a class="btn btn--small" href="?q={{ query|urlencode }}&page={{ all_species.next_page_number }}">Suivante</a>
+                    <a class="btn btn--small" href="?q={{ query|urlencode }}&page={{ all_species.paginator.num_pages }}">Dernière</a>
+                {% endif %}
+            </span>
+        </nav>
+
+    {% else %}
+        <div class="empty">
+            {% include "includes/_icon_leaf.html" %}
+            {% if query %}
+                <p>Aucune espèce ne correspond à « {{ query }} ». Essaie avec le nom latin, ou un mot plus court.</p>
+                <a class="btn" href="{% url 'list_species' %}">Voir tout le catalogue</a>
+            {% else %}
+                <p>Le catalogue est vide. Lance le script de peuplement des espèces pour l'alimenter depuis GBIF.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'Plantes/js/species_search.js' %}"></script>
 {% endblock %}

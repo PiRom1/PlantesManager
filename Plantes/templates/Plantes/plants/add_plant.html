@@ -4,10 +4,18 @@
 
 {% block content %}
 
-    <p><a href="{% url 'list_plants' %}">&laquo; Mes plantes</a></p>
+    <header class="page-head">
+        <div>
+            {% url 'list_plants' as back_url %}
+            {% include "includes/_back.html" with url=back_url label="Mes plantes" %}
+            <h1 class="page-head__title">Ajouter une plante</h1>
+            <p class="page-head__sub">Seule l'espèce compte au départ, le reste peut attendre.</p>
+        </div>
+    </header>
 
-    <h1>Ajouter une plante</h1>
-
-    {% include "Plantes/plants/_plant_form.html" with submit_label="Ajouter" %}
+    <div class="panel">
+        {% url 'list_plants' as cancel_url %}
+        {% include "Plantes/plants/_plant_form.html" with submit_label="Ajouter à ma collection" cancel_url=cancel_url %}
+    </div>
 
 {% endblock %}

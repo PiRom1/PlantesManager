@@ -2,6 +2,8 @@
 // Le formulaire de la popup est envoyé en arrière-plan ; l'objet créé est
 // ajouté au menu déroulant correspondant, puis sélectionné.
 //
+// L'ouverture des boîtes est gérée par open_dialog.js.
+//
 // Balisage attendu :
 //   <button data-opens="dialog-spot">
 //   <dialog id="dialog-spot" data-post-url="..." data-target="id_spot">
@@ -49,11 +51,5 @@ function setupQuickAdd(dialog) {
     });
 }
 
-
-document.querySelectorAll('[data-opens]').forEach(button => {
-    button.addEventListener('click', () => {
-        document.getElementById(button.dataset.opens).showModal();
-    });
-});
 
 document.querySelectorAll('dialog[data-post-url]').forEach(setupQuickAdd);

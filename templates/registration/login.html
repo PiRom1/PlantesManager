@@ -1,27 +1,70 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Connexion — PlantesManager{% endblock %}
 
-{% block content %}
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'Plantes/css/login.css' %}">
+{% endblock %}
 
-    <h1>Connexion</h1>
+{% block body %}
+<div class="shell--bare">
 
-    {% if form.errors %}
-        <p>Identifiant ou mot de passe incorrect.</p>
-    {% endif %}
+    <div class="login">
 
-    {% if next %}
-        <p>Connecte-toi pour accéder à cette page.</p>
-    {% endif %}
+        <div class="login__plate" aria-hidden="true">
+            <svg viewBox="0 0 200 260" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M100 236V96"/>
+                <path d="M100 96C100 60 76 38 40 38c0 36 22 58 60 58Z"/>
+                <path d="M100 128c0-30 22-52 66-52 0 30-22 52-66 52Z"/>
+                <path d="M100 160c0-24-18-40-48-40 0 24 18 40 48 40Z"/>
+                <path d="M52 50c12 8 26 20 40 36M158 84c-14 6-30 16-46 32M62 128c10 6 20 14 30 22"/>
+                <path d="M76 236h48"/>
+                <path d="M84 206c0 12 2 22 6 30M116 206c0 12-2 22-6 30"/>
+            </svg>
+            <span class="login__figure">Pl. I — Feuillage</span>
+        </div>
 
-    <form method="post">
-        {% csrf_token %}
+        <div class="login__body">
 
-        {{ form.as_p }}
+            <a class="brand" href="{% url 'login' %}">
+                <span class="brand__mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 21V11"/>
+                        <path d="M12 11c0-4.4 3.6-8 8-8 0 4.4-3.6 8-8 8Z"/>
+                        <path d="M12 15c0-3.3-2.7-6-6-6 0 3.3 2.7 6 6 6Z"/>
+                    </svg>
+                </span>
+                <span>
+                    <span class="brand__name">PlantesManager</span><br>
+                    <span class="brand__tagline">Ton jardin d'intérieur</span>
+                </span>
+            </a>
 
-        <input type="hidden" name="next" value="{{ next }}">
+            <h1 class="login__title">Connexion</h1>
 
-        <button type="submit">Se connecter</button>
-    </form>
+            {% if form.errors %}
+                <p class="notice notice--error">Identifiant ou mot de passe incorrect.</p>
+            {% elif next %}
+                <p class="notice">Connecte-toi pour accéder à cette page.</p>
+            {% endif %}
 
+            <form class="form" method="post">
+                {% csrf_token %}
+
+                {% include "includes/_field.html" with field=form.username %}
+                {% include "includes/_field.html" with field=form.password %}
+
+                <input type="hidden" name="next" value="{{ next }}">
+
+                <div class="form__actions">
+                    <button class="btn btn--primary" type="submit">Se connecter</button>
+                </div>
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
 {% endblock %}

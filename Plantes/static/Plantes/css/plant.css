@@ -1,0 +1,180 @@
+/* Fiche plante : carte d'identité et journal d'entretien. */
+
+/* Carte d'identité : la planche à gauche, le cartel à droite */
+.idcard {
+    display: grid;
+    grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+    gap: var(--sp-6);
+    align-items: start;
+}
+
+.idcard__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+}
+
+@media (max-width: 700px) {
+    .idcard {
+        grid-template-columns: 1fr;
+    }
+
+    .idcard__plate {
+        max-width: 260px;
+    }
+}
+
+/* Boîte du formulaire du journal : plus large que les boîtes de création rapide */
+.dialog--wide {
+    width: min(720px, calc(100vw - 2rem));
+}
+
+/* Chronologie : la date en marge, le contenu à droite, un fil vertical */
+.timeline {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+    max-width: 860px;
+}
+
+.timeline::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 64px;
+    border-left: 1px solid var(--line-strong);
+}
+
+.timeline__entry {
+    position: relative;
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: var(--sp-5);
+}
+
+.timeline__entry::before {
+    content: "";
+    position: absolute;
+    top: 14px;
+    left: 60px;
+    width: 9px;
+    height: 9px;
+    background: var(--bg);
+    border: 2px solid var(--leaf);
+    border-radius: 50%;
+}
+
+.timeline__date {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.15;
+    color: var(--text-3);
+    font-size: var(--fs-xs);
+}
+
+.timeline__day {
+    font-family: var(--font-display);
+    font-size: var(--fs-xl);
+    font-weight: 500;
+    color: var(--text);
+}
+
+.timeline__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-surface);
+}
+
+.timeline__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+}
+
+.timeline__action {
+    margin-right: var(--sp-1);
+    font-weight: 600;
+}
+
+.timeline__detail {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1) var(--sp-4);
+    font-size: var(--fs-sm);
+}
+
+.timeline__detail div {
+    display: flex;
+    gap: var(--sp-1);
+}
+
+.timeline__detail dt {
+    color: var(--text-3);
+}
+
+.timeline__detail dt::after {
+    content: " :";
+}
+
+.timeline__detail dd {
+    margin: 0;
+    color: var(--text-2);
+}
+
+.timeline__comment {
+    color: var(--text-2);
+}
+
+.timeline__photo {
+    display: block;
+    width: 140px;
+    padding: 4px;
+    background: #000;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-plate);
+    transition: border-color var(--t-fast);
+}
+
+.timeline__photo:hover {
+    border-color: var(--moss);
+}
+
+.timeline__photo img {
+    aspect-ratio: 1;
+    object-fit: cover;
+    cursor: zoom-in;
+}
+
+.timeline:has(> .empty)::before {
+    display: none;
+}
+
+@media (max-width: 520px) {
+    .timeline::before {
+        left: 12px;
+    }
+
+    .timeline__entry {
+        grid-template-columns: 1fr;
+        gap: var(--sp-2);
+        padding-left: var(--sp-6);
+    }
+
+    .timeline__entry::before {
+        left: 8px;
+    }
+
+    .timeline__date {
+        flex-direction: row;
+        align-items: baseline;
+        gap: var(--sp-2);
+    }
+}

@@ -4,14 +4,24 @@
 
 {% block content %}
 
-    <p><a href="{% url 'list_spots' %}">&laquo; Mes emplacements</a></p>
+    <header class="page-head">
+        <div>
+            {% url 'list_spots' as back_url %}
+            {% include "includes/_back.html" with url=back_url label="Emplacements" %}
+            <h1 class="page-head__title">Nouvel emplacement</h1>
+        </div>
+    </header>
 
-    <h1>Nouvel emplacement</h1>
+    <div class="panel">
+        <form class="form" method="post">
+            {% csrf_token %}
+            {% include "Plantes/spots/_spot_fields.html" %}
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Créer</button>
-    </form>
+            <div class="form__actions">
+                <button class="btn btn--primary" type="submit">Créer l'emplacement</button>
+                <a class="btn btn--ghost" href="{% url 'list_spots' %}">Annuler</a>
+            </div>
+        </form>
+    </div>
 
 {% endblock %}

@@ -4,3 +4,4 @@ djangorestframework
 channels
 uvicorn[standard]
 python-dotenv
+requests

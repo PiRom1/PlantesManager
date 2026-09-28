@@ -4,27 +4,49 @@
 
 {% block content %}
 
-    <p><a href="{% url 'list_spots' %}">&laquo; Mes emplacements</a></p>
+    <header class="page-head">
+        <div>
+            {% url 'list_spots' as back_url %}
+            {% include "includes/_back.html" with url=back_url label="Emplacements" %}
+            <h1 class="page-head__title">{{ spot.name }}</h1>
+            {% if spot.description %}
+                <p class="page-head__sub">{{ spot.description }}</p>
+            {% endif %}
+        </div>
+    </header>
 
-    <h1>{{ spot.name }}</h1>
+    <section class="section panel">
+        <div class="section__head">
+            <h2>Carte de l'emplacement</h2>
+            <span class="section__count">{{ spot.plant_set.count }} plante{{ spot.plant_set.count|pluralize }}</span>
+        </div>
 
-    <h2>Modifier</h2>
+        <form class="form" method="post">
+            {% csrf_token %}
+            {% include "Plantes/spots/_spot_fields.html" %}
 
-    <form method="post">
-        {% csrf_token %}
-        {{ form.as_p }}
-        <button type="submit">Enregistrer</button>
-    </form>
+            <div class="form__actions">
+                <button class="btn btn--primary" type="submit">Enregistrer</button>
+                <a class="btn btn--ghost" href="{% url 'list_spots' %}">Annuler</a>
+            </div>
+        </form>
+    </section>
 
-    <h2>Plantes à cet emplacement</h2>
 
-    <ul>
-        {% for plant in spot.plant_set.all %}
-            <li><a href="{% url 'detail_plant' plant.id %}">{{ plant }}</a></li>
+    <section class="section">
+        <div class="section__head">
+            <h2>Plantes à cet emplacement</h2>
+        </div>
 
-        {% empty %}
-            <li>Aucune plante ici pour l'instant.</li>
-        {% endfor %}
-    </ul>
+        {% if spot.plant_set.all %}
+            <ul class="grid">
+                {% for plant in spot.plant_set.all %}
+                    <li>{% include "Plantes/plants/_specimen_card.html" with plant=plant %}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="quiet">Aucune plante ici pour l'instant. Choisis cet emplacement dans la fiche d'une plante pour l'y installer.</p>
+        {% endif %}
+    </section>
 
 {% endblock %}
