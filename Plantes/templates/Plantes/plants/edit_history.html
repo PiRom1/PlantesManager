@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Modifier une entrée du journal — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <header class="page-head">
+        <div>
+            {% url 'detail_plant' plant.id as back_url %}
+            {% include "includes/_back.html" with url=back_url label="Retour à la fiche" %}
+            <h1 class="page-head__title">Modifier une entrée du journal</h1>
+            <p class="page-head__sub">{{ plant }}, entrée du {{ entry.date|date:"d/m/Y à H:i" }}</p>
+        </div>
+    </header>
+
+    <div class="panel">
+        <form class="form" method="post" enctype="multipart/form-data">
+            {% include "Plantes/plants/_history_form.html" %}
+
+            <div class="form__actions">
+                <button class="btn btn--primary" type="submit">Enregistrer les modifications</button>
+                <a class="btn btn--ghost" href="{{ back_url }}#journal">Annuler</a>
+            </div>
+        </form>
+    </div>
+
+    <section class="section panel">
+        <h2>Supprimer cette entrée</h2>
+        <p class="quiet">L'entrée disparaît du journal. Si elle portait un état, celui de la plante est recalculé d'après les entrées restantes.</p>
+
+        <form method="post" action="{% url 'delete_history' plant.id entry.id %}"
+              onsubmit="return confirm('Supprimer définitivement cette entrée du journal ?')">
+            {% csrf_token %}
+            <button class="btn btn--danger" type="submit">Supprimer l'entrée</button>
+        </form>
+    </section>
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'Plantes/js/care_detail.js' %}"></script>
+{% endblock %}

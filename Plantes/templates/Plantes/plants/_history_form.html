@@ -1,0 +1,59 @@
+{% load l10n %}
+{# Champs d'une entrée du journal, communs à l'ajout (fiche plante) et à la modification. #}
+{# Attend history_form et detail_groups ; les boutons sont laissés à la page. #}
+
+{% csrf_token %}
+
+{{ history_form.non_field_errors }}
+
+<div class="form__row">
+    {% include "includes/_field.html" with field=history_form.action %}
+    {% include "includes/_field.html" with field=history_form.state %}
+    {% include "includes/_field.html" with field=history_form.date %}
+</div>
+
+{% for action, fields in detail_groups %}
+    <fieldset class="form__group" data-action-fields="{{ action.id }}" hidden>
+        <legend class="form__group-title">Détail de l'action : {{ action.name|lower }}</legend>
+
+        <div class="form__row">
+            {% for field, input_id, current in fields %}
+                <div class="field{% if field.type == 'boolean' %} field--check{% endif %}">
+                    <label class="field__label" for="{{ input_id }}">{{ field.label }}</label>
+
+                    {% if field.type == 'select' %}
+                        <select name="{{ input_id }}" id="{{ input_id }}">
+                            <option value="">—</option>
+                            {% for value, label in field.choices %}
+                                <option value="{{ value }}"{% if value == current %} selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+
+                    {% elif field.type == 'boolean' %}
+                        <input type="checkbox" name="{{ input_id }}" id="{{ input_id }}"{% if current %} checked{% endif %}>
+
+                    {% elif field.type == 'integer' %}
+                        <input type="number" step="1" name="{{ input_id }}" id="{{ input_id }}" value="{{ current|default_if_none:''|unlocalize }}">
+
+                    {% elif field.type == 'decimal' %}
+                        {# Pas de virgule française : le champ number ne la comprend pas #}
+                        <input type="number" step="any" name="{{ input_id }}" id="{{ input_id }}" value="{{ current|default_if_none:''|unlocalize }}">
+
+                    {% else %}
+                        <input type="text" name="{{ input_id }}" id="{{ input_id }}" value="{{ current|default_if_none:'' }}">
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </fieldset>
+{% endfor %}
+
+{% include "includes/_field.html" with field=history_form.comment %}
+
+<div class="form__row">
+    {% include "includes/_field.html" with field=history_form.height %}
+    {% include "includes/_field.html" with field=history_form.width %}
+    {% include "includes/_field.html" with field=history_form.n_leaves %}
+</div>
+
+{% include "includes/_field.html" with field=history_form.image %}

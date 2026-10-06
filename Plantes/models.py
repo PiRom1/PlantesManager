@@ -528,6 +528,20 @@ class Plant(models.Model):
         specie = f"{self.specie} '{self.cultivar}'" if self.cultivar else f'{self.specie}'
         return f'{specie} #{self.pk}'
 
+    def refresh_state(self):
+        """
+        Le journal fait foi : l'état de la plante est celui de la dernière entrée
+        qui en porte un. Aucune entrée avec un état = pas d'état.
+        """
+
+        last = (self.planthistory_set
+                .filter(state__isnull=False)
+                .order_by('-date', '-id')
+                .first())
+
+        self.state = last.state if last else None
+        self.save(update_fields=['state'])
+
 
 
 
@@ -541,6 +555,7 @@ class PlantHistory(models.Model):
 
     plant = models.ForeignKey(Plant, on_delete=models.CASCADE)
     action = models.ForeignKey(Action, on_delete=models.SET_NULL, null=True, blank=True)
+    state = models.ForeignKey(PlantState, on_delete=models.SET_NULL, default=None, null=True, blank=True) # Nouvel état constaté
 
     # User vrac
     comment = models.TextField(default=None, blank=True, null=True)

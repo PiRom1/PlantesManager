@@ -24,7 +24,7 @@
         </div>
         <div class="page-head__actions">
             <a class="btn" href="{% url 'edit_plant' plant.id %}">Modifier la fiche</a>
-            <button class="btn btn--primary" type="button" data-opens="dialog-history">Noter une action</button>
+            <button class="btn btn--primary" type="button" data-opens="dialog-history">Noter dans le journal</button>
         </div>
     </header>
 
@@ -85,7 +85,17 @@
                 <dd>{{ plant.surname|default_if_none:"—" }}</dd>
 
                 <dt>État</dt>
-                <dd>{% if plant.state %}<span class="chip chip--leaf">{{ plant.state }}</span>{% else %}—{% endif %}</dd>
+                <dd>
+                    <button class="chip{% if plant.state %} chip--leaf{% endif %} chip--button" type="button"
+                            data-opens="dialog-history" data-focuses="{{ history_form.state.auto_id }}"
+                            title="Noter un changement d'état dans le journal">
+                        {{ plant.state|default_if_none:"Non renseigné" }}
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 20h9"/>
+                            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>
+                        </svg>
+                    </button>
+                </dd>
 
                 <dt>Plante mère</dt>
                 <dd>
@@ -159,7 +169,7 @@
                 <h2>Journal d'entretien</h2>
                 <span class="section__count">{{ history|length }} entrée{{ history|length|pluralize }}</span>
             </div>
-            <button class="btn btn--small" type="button" data-opens="dialog-history">Noter une action</button>
+            <button class="btn btn--small" type="button" data-opens="dialog-history">Noter dans le journal</button>
         </div>
 
         <ol class="timeline">
@@ -173,11 +183,21 @@
 
                     <div class="timeline__body">
                         <div class="timeline__head">
-                            <span class="timeline__action">{{ entry.action|default_if_none:"Observation" }}</span>
+                            <span class="timeline__action">
+                                {% if entry.action %}{{ entry.action }}{% elif entry.previous_state %}Changement d'état{% else %}Observation{% endif %}
+                            </span>
+
+                            {% if entry.state %}
+                                <span class="chip chip--leaf">
+                                    {% if entry.previous_state %}{{ entry.previous_state }} → {% endif %}{{ entry.state }}
+                                </span>
+                            {% endif %}
 
                             {% if entry.height %}<span class="chip">hauteur {{ entry.height }} cm</span>{% endif %}
                             {% if entry.width %}<span class="chip">largeur {{ entry.width }} cm</span>{% endif %}
                             {% if entry.n_leaves %}<span class="chip">{{ entry.n_leaves }} feuille{{ entry.n_leaves|pluralize }}</span>{% endif %}
+
+                            <a class="timeline__edit" href="{% url 'edit_history' plant.id entry.id %}">Modifier</a>
                         </div>
 
                         {% if entry.detail_summary %}
@@ -204,8 +224,8 @@
             {% empty %}
                 <li class="empty">
                     {% include "includes/_icon_leaf.html" %}
-                    <p>Rien dans le journal pour l'instant. Note un arrosage, un rempotage ou une simple observation : chaque entrée garde sa date, ses mesures et sa photo.</p>
-                    <button class="btn btn--primary" type="button" data-opens="dialog-history">Noter une action</button>
+                    <p>Rien dans le journal pour l'instant. Note un arrosage, un rempotage, un changement d'état ou une simple observation : chaque entrée garde sa date, ses mesures et sa photo.</p>
+                    <button class="btn btn--primary" type="button" data-opens="dialog-history">Noter dans le journal</button>
                 </li>
             {% endfor %}
         </ol>
@@ -252,68 +272,12 @@
     {# Formulaire du journal : dans une boîte, rouverte d'office si le POST a échoué #}
     <dialog class="dialog--wide" id="dialog-history"{% if history_form.errors %} data-open-on-load{% endif %}>
         <div class="dialog__head">
-            <h2>Noter une action</h2>
+            <h2>Noter dans le journal</h2>
             <span class="quiet">{{ plant }}</span>
         </div>
 
         <form class="form" method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-
-            {{ history_form.non_field_errors }}
-
-            <div class="form__row">
-                {% include "includes/_field.html" with field=history_form.action %}
-                {% include "includes/_field.html" with field=history_form.date %}
-            </div>
-
-            {% for action in actions %}
-                {% if action.detail_fields %}
-                    <fieldset class="form__group" data-action-fields="{{ action.id }}" hidden>
-                        <legend class="form__group-title">Détail de l'action : {{ action.name|lower }}</legend>
-
-                        <div class="form__row">
-                            {% for field in action.detail_fields %}
-                                {% with input_id="detail_"|add:action.code|add:"_"|add:field.name %}
-                                    <div class="field{% if field.type == 'boolean' %} field--check{% endif %}">
-                                        <label class="field__label" for="{{ input_id }}">{{ field.label }}</label>
-
-                                        {% if field.type == 'select' %}
-                                            <select name="{{ input_id }}" id="{{ input_id }}">
-                                                <option value="">—</option>
-                                                {% for value, label in field.choices %}
-                                                    <option value="{{ value }}">{{ label }}</option>
-                                                {% endfor %}
-                                            </select>
-
-                                        {% elif field.type == 'boolean' %}
-                                            <input type="checkbox" name="{{ input_id }}" id="{{ input_id }}">
-
-                                        {% elif field.type == 'integer' %}
-                                            <input type="number" step="1" name="{{ input_id }}" id="{{ input_id }}">
-
-                                        {% elif field.type == 'decimal' %}
-                                            <input type="number" step="any" name="{{ input_id }}" id="{{ input_id }}">
-
-                                        {% else %}
-                                            <input type="text" name="{{ input_id }}" id="{{ input_id }}">
-                                        {% endif %}
-                                    </div>
-                                {% endwith %}
-                            {% endfor %}
-                        </div>
-                    </fieldset>
-                {% endif %}
-            {% endfor %}
-
-            {% include "includes/_field.html" with field=history_form.comment %}
-
-            <div class="form__row">
-                {% include "includes/_field.html" with field=history_form.height %}
-                {% include "includes/_field.html" with field=history_form.width %}
-                {% include "includes/_field.html" with field=history_form.n_leaves %}
-            </div>
-
-            {% include "includes/_field.html" with field=history_form.image %}
+            {% include "Plantes/plants/_history_form.html" %}
 
             <div class="dialog__actions">
                 <button class="btn btn--ghost" type="button" onclick="this.closest('dialog').close()">Annuler</button>

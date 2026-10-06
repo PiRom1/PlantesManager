@@ -42,9 +42,10 @@ class TelegramBot:
 
         return bool(self.token and self.chat_id)
 
-    def send_message(self, text: str) -> bool:
+    def send_message(self, text: str, parse_mode: str = None) -> bool:
         """
         Envoie `text` dans la conversation configurée.
+        `parse_mode='HTML'` interprète <b>, <i>, ... : le texte doit alors être échappé.
         Retourne True si Telegram a accepté le message, False sinon.
         """
 
@@ -54,6 +55,9 @@ class TelegramBot:
 
         url = f'{API_URL}/bot{self.token}/sendMessage'
         data = {'chat_id': self.chat_id, 'text': text, 'disable_web_page_preview': True}
+
+        if parse_mode:
+            data['parse_mode'] = parse_mode
 
         try:
             response = requests.post(url, data=data, timeout=TIMEOUT_SECONDS)

@@ -27,7 +27,10 @@
         </div>
 
         <div class="form__row">
-            {% include "includes/_field.html" with field=form.state %}
+            {# L'état ne se choisit qu'à la création, ensuite il passe par le journal #}
+            {% if form.state %}
+                {% include "includes/_field.html" with field=form.state %}
+            {% endif %}
             {% include "includes/_field.html" with field=form.father %}
         </div>
 

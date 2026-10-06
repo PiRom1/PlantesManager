@@ -104,6 +104,17 @@
     font-weight: 600;
 }
 
+/* Lien de modification, rejeté en bout de ligne */
+.timeline__edit {
+    margin-left: auto;
+    font-size: var(--fs-xs);
+    color: var(--text-3);
+}
+
+.timeline__edit:hover {
+    color: var(--leaf);
+}
+
 .timeline__detail {
     display: flex;
     flex-wrap: wrap;

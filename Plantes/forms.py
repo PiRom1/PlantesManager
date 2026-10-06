@@ -32,6 +32,7 @@ class PlantForm(forms.ModelForm):
         ]
         widgets = {
             'specie': forms.HiddenInput(),
+            'cultivar': forms.TextInput(attrs={'placeholder': 'Variegata, ...'}),
             'acquisition_date': forms.DateInput(attrs={'type': 'date'}),
         }
         labels = {
@@ -48,6 +49,24 @@ class PlantForm(forms.ModelForm):
             'origin': 'Origine',
             'image': 'Photo',
         }
+        error_messages = {
+            'specie': {
+                'required': 'Choisis une espèce dans la liste des suggestions.',
+                'invalid_choice': 'Choisis une espèce dans la liste des suggestions.',
+            },
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Le modèle tolère une plante sans espèce (SET_NULL si l'espèce est
+        # supprimée du catalogue), mais la saisie, elle, doit en désigner une
+        self.fields['specie'].required = True
+
+        # L'état ne se choisit qu'à la création. Ensuite, il découle du journal :
+        # un changement ou une correction passe par une entrée du journal
+        if self.instance.pk:
+            del self.fields['state']
 
 
 class PlantImageForm(forms.ModelForm):
@@ -122,6 +141,7 @@ class PlantHistoryForm(forms.ModelForm):
         model = PlantHistory
         fields = [
             'action',
+            'state',
             'date',
             'comment',
             'image',
@@ -135,6 +155,7 @@ class PlantHistoryForm(forms.ModelForm):
         }
         labels = {
             'action': 'Action',
+            'state': 'Nouvel état',
             'date': 'Date',
             'comment': 'Commentaire',
             'image': 'Photo',
@@ -148,3 +169,20 @@ class PlantHistoryForm(forms.ModelForm):
 
         # Le navigateur n'accepte que ce format pour datetime-local
         self.fields['date'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S']
+
+        # Une entrée n'est pas forcément une action : un simple constat suffit
+        self.fields['action'].empty_label = 'Aucune, simple constat'
+        self.fields['state'].empty_label = 'Inchangé'
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        # Au moins une information, sinon l'entrée ne dit rien
+        filled = [cleaned_data.get(name) for name in
+                  ['action', 'state', 'comment', 'image', 'height', 'width', 'n_leaves']]
+
+        if not any(value not in (None, '') for value in filled):
+            raise forms.ValidationError(
+                'Entrée vide : indique au moins une action, un état, un commentaire, une photo ou une mesure.')
+
+        return cleaned_data

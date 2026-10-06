@@ -4,10 +4,16 @@
 //   <button data-opens="dialog-history">
 //   <dialog id="dialog-history" data-open-on-load>   (ouverte dès le chargement,
 //                                                     ex. formulaire en erreur)
+//   <button data-opens="dialog-history" data-focuses="id_state">
+//                                                    (curseur placé sur ce champ)
 
 document.querySelectorAll('[data-opens]').forEach(button => {
     button.addEventListener('click', () => {
         document.getElementById(button.dataset.opens).showModal();
+
+        if (button.dataset.focuses) {
+            document.getElementById(button.dataset.focuses).focus();
+        }
     });
 });
 
