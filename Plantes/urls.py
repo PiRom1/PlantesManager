@@ -1,5 +1,5 @@
 from django.urls import path, include
-from Plantes.views import plant_views, pot_views, species_views, spot_views
+from Plantes.views import media_views, plant_views, pot_views, species_views, spot_views
 
 urlpatterns = [
     path("accounts/", include("django.contrib.auth.urls")),
@@ -27,4 +27,7 @@ urlpatterns = [
     path('pots/', pot_views.list_pots, name='list_pots'),
     path('pot/add/', pot_views.add_pot, name='add_pot'),
     path('pot/<int:id_pot>/', pot_views.detail_pot, name='detail_pot'),
+
+    # Médias (photos), servis uniquement aux utilisateurs connectés
+    path('media/<path:path>', media_views.serve_media, name='serve_media'),
 ]
