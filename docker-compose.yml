@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_PATH: /data/db/db.sqlite3
+      MEDIA_ROOT: /app/media
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      - ./deploy/db:/data/db
+      - ./deploy/media:/app/media
