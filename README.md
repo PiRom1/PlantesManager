@@ -103,6 +103,54 @@ python manage.py runserver
 
 ---
 
+## 🐳 Déploiement
+
+L'application tourne dans un container, derrière ton reverse proxy (HTTPS et nom
+de domaine restent de son ressort). SQLite et les photos vivent dans `deploy/` à
+côté du code : sauvegarder, c'est copier ce dossier.
+
+```bash
+git clone <ce dépôt> && cd PlantesManager
+cp .env_example .env          # puis remplir SECRET_KEY, DEBUG=False, ALLOWED_HOSTS,
+                              # CSRF_TRUSTED_ORIGINS, PORT, DJANGO_SUPERUSER_*
+docker compose up -d --build
+```
+
+Au démarrage, le container applique les migrations, peuple les référentiels et le
+catalogue d'espèces, raccroche les images déjà présentes dans `deploy/media/` et
+crée le superuser si aucun n'existe. Tout est idempotent : chaque redémarrage
+rejoue ces étapes sans rien dupliquer.
+
+### 🖼️ Récupérer tes images d'espèces
+
+Les photos ne sont pas dans git. Depuis la machine qui les a :
+
+```bash
+rsync -a media/ serveur:/chemin/PlantesManager/deploy/media/
+```
+
+Puis `docker compose restart web` : les images sont raccrochées aux espèces.
+Sans ces fichiers, `docker compose exec web python manage.py runscript fetch_specie_images`
+en télécharge depuis GBIF (long).
+
+### 🔄 Mettre à jour
+
+```bash
+git pull && docker compose up -d --build
+```
+
+### 🧯 Si ça ne répond pas
+
+| Symptôme | Cause probable |
+|---|---|
+| `400 Bad Request` | `ALLOWED_HOSTS` ne contient pas le nom de domaine |
+| `403 CSRF` à la connexion | `CSRF_TRUSTED_ORIGINS` sans le `https://` ou mauvais domaine |
+| Photos en 404 | `deploy/media/` vide ou droits de lecture |
+
+`docker compose logs web` montre le détail.
+
+---
+
 ## 🔧 Configuration
 
 Les réglages sensibles se lisent dans l'environnement, avec des valeurs de repli
@@ -113,6 +161,9 @@ adaptées au développement :
 | `SECRET_KEY` | valeur de développement — 🚨 **à définir en production** |
 | `DEBUG` | `True` |
 | `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | vide |
+| `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` | `127.0.0.1,localhost` / vide |
+| `DATABASE_PATH`, `MEDIA_ROOT` | `PlantesManager/db.sqlite3` / `media/` |
+| `DJANGO_SUPERUSER_USERNAME`, `_EMAIL`, `_PASSWORD` | non définis : pas de création automatique |
 
 💾 La base est un SQLite dans `PlantesManager/db.sqlite3`.
 
