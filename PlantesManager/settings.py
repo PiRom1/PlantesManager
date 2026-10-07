@@ -18,8 +18,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Variables du .env à la racine (secret, debug, Telegram…), voir .env_example
 load_dotenv(BASE_DIR / '.env')
 
+
+def env_list(name, default):
+    """
+    Liste lue dans l'environnement, séparateur virgule, espaces tolérés.
+    Variable absente → `default`. Variable vide → liste vide.
+    """
+
+    value = os.environ.get(name)
+    if value is None:
+        return default
+
+    return [item.strip() for item in value.split(',') if item.strip()]
+
+
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
+MEDIA_ROOT = os.environ.get('MEDIA_ROOT', os.path.join(BASE_DIR, 'media/'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -35,12 +49,10 @@ TOKEN_EXPIRE_HOURS = 24
 TOKEN_EXPIRED_AFTER_SECONDS = 3600  # Durée de vie du token en secondes
 
 
-ALLOWED_HOSTS = [
-    '127.0.0.1',
-    'localhost',
-]
+# En prod : ALLOWED_HOSTS=plantes.exemple.fr et CSRF_TRUSTED_ORIGINS=https://plantes.exemple.fr
+ALLOWED_HOSTS = env_list('ALLOWED_HOSTS', ['127.0.0.1', 'localhost'])
 
-CSRF_TRUSTED_ORIGINS = ['https://*.127.0.0.1']
+CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS', [])
 
 
 # Application definition
@@ -61,6 +73,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -106,11 +119,7 @@ CHANNEL_LAYERS = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'PlantesManager/db.sqlite3',
-        'HOST': os.environ.get('DATABASE_DEFAULT_HOST'),
-        'PORT': os.environ.get('DATABASE_DEFAULT_PORT'),
-        'USER': os.environ.get('DATABASE_DEFAULT_USER'),
-        'PASSWORD': os.environ.get('DATABASE_DEFAULT_PASSWORD'),
+        'NAME': os.environ.get('DATABASE_PATH', BASE_DIR / 'PlantesManager/db.sqlite3'),
     }
 }
 
@@ -159,7 +168,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'Plantes/static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 
 # Default primary key field type
@@ -184,6 +193,10 @@ EMAIL_PORT = 587
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
-# Add/update the following cookie settings:
-SESSION_COOKIE_SAMESITE = 'Lax'  # ou 'None' si HTTPS avec SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = False    # True en production avec HTTPS
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+# Derrière le reverse proxy HTTPS du serveur : cookies Secure et détection du schéma
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

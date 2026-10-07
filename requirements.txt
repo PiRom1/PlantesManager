@@ -5,3 +5,5 @@ channels
 uvicorn[standard]
 python-dotenv
 requests
+pillow
+whitenoise
