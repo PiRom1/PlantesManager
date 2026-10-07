@@ -105,14 +105,14 @@ python manage.py runserver
 
 ## 🐳 Déploiement
 
-L'application tourne dans un container, derrière ton reverse proxy (HTTPS et nom
-de domaine restent de son ressort). SQLite et les photos vivent dans `deploy/` à
+L'application tourne dans un container exposé par le Traefik du serveur (HTTPS via
+Let's Encrypt, routeur `plantes`). SQLite et les photos vivent dans `deploy/` à
 côté du code : sauvegarder, c'est copier ce dossier.
 
 ```bash
 git clone <ce dépôt> && cd PlantesManager
-cp .env_example .env          # puis remplir SECRET_KEY, DEBUG=False, ALLOWED_HOSTS,
-                              # CSRF_TRUSTED_ORIGINS, PORT, DJANGO_SUPERUSER_*
+cp .env_example .env          # puis remplir SECRET_KEY, DEBUG=False, DOMAIN, ALLOWED_HOSTS,
+                              # CSRF_TRUSTED_ORIGINS, DJANGO_SUPERUSER_*
 docker compose up -d --build
 ```
 
@@ -162,6 +162,7 @@ adaptées au développement :
 | `DEBUG` | `True` |
 | `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | vide |
 | `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS` | `127.0.0.1,localhost` / vide |
+| `DOMAIN`, `TRAEFIK_NETWORK` (compose uniquement) | vide / `wildlifesounds_default` |
 | `DATABASE_PATH`, `MEDIA_ROOT` | `PlantesManager/db.sqlite3` / `media/` |
 | `DJANGO_SUPERUSER_USERNAME`, `_EMAIL`, `_PASSWORD` | non définis : pas de création automatique |
 

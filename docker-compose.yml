@@ -6,8 +6,20 @@ services:
     environment:
       DATABASE_PATH: /data/db/db.sqlite3
       MEDIA_ROOT: /app/media
-    ports:
-      - "${PORT:-8000}:8000"
     volumes:
       - ./deploy/db:/data/db
       - ./deploy/media:/app/media
+    networks:
+      - traefik
+    # Exposé par le Traefik du serveur (réseau wildlifesounds_default), pas de port publié.
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.plantes.rule: Host(`${DOMAIN}`)
+      traefik.http.routers.plantes.entrypoints: websecure
+      traefik.http.routers.plantes.tls.certresolver: myresolver
+      traefik.http.services.plantes.loadbalancer.server.port: "8000"
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:-wildlifesounds_default}
