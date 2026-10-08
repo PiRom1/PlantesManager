@@ -1,7 +1,11 @@
 from django.urls import path, include
+from django.views.generic import RedirectView
 from Plantes.views import media_views, plant_views, pot_views, species_views, spot_views
 
 urlpatterns = [
+    # Racine : redirige vers la page d'accueil (login_required s'occupe des non-connectés)
+    path('', RedirectView.as_view(pattern_name='list_species'), name='home'),
+
     path("accounts/", include("django.contrib.auth.urls")),
 
     # Species
