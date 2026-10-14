@@ -604,23 +604,21 @@ h3 {
     cursor: help;
 }
 
-/* Halo : un anneau net, puis un dégradé de plusieurs pixels, pour que la couleur se lise de loin */
-.specimen__pest svg {
-    width: 18px;
-    height: 18px;
-}
-
+/* Fond plein à la couleur du statut, insecte sombre dessus, puis un halo
+   de plusieurs pixels pour que la couleur se lise de loin */
 .specimen__pest--suspicion {
-    color: var(--ochre);
+    --icon-bug-back: var(--ochre);
+    color: var(--leaf-ink);
     border-color: var(--ochre);
-    background: rgba(210, 179, 110, 0.22);
+    background: var(--ochre);
     box-shadow: 0 0 0 3px rgba(210, 179, 110, 0.45), 0 0 14px 6px rgba(210, 179, 110, 0.35);
 }
 
 .specimen__pest--confirmed {
-    color: var(--danger);
+    --icon-bug-back: var(--danger);
+    color: var(--leaf-ink);
     border-color: var(--danger);
-    background: rgba(224, 128, 112, 0.22);
+    background: var(--danger);
     box-shadow: 0 0 0 3px rgba(224, 128, 112, 0.5), 0 0 14px 6px rgba(224, 128, 112, 0.4);
 }
 
