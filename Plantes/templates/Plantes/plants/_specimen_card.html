@@ -7,9 +7,9 @@
         {# Parasites : puce sur la planche, statut déduit du journal #}
         {% if plant.pest_episode %}
             {% if plant.pest_episode.confirmed %}
-                <span class="specimen__pest specimen__pest--confirmed" title="Parasite avéré" aria-label="Parasite avéré">🐛</span>
+                <span class="specimen__pest specimen__pest--confirmed" title="Parasite avéré" aria-label="Parasite avéré">{% include "includes/_icon_bug.html" %}</span>
             {% else %}
-                <span class="specimen__pest specimen__pest--suspicion" title="Parasite suspecté" aria-label="Parasite suspecté">🐛</span>
+                <span class="specimen__pest specimen__pest--suspicion" title="Parasite suspecté" aria-label="Parasite suspecté">{% include "includes/_icon_bug.html" %}</span>
             {% endif %}
         {% endif %}
         {% if plant.image %}
