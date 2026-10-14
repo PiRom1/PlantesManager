@@ -2,7 +2,7 @@
 
 from django import forms
 
-from Plantes.models import Plant, PlantHistory, Pot, PropagationMedium, PropagationMethod, Spot
+from Plantes.models import Plant, PlantHistory, Pot, PropagationMedium, PropagationMethod, Specie, Spot
 
 
 class PlantForm(forms.ModelForm):
@@ -208,3 +208,51 @@ class PropagationForm(forms.Form):
     medium = forms.ChoiceField(label='Milieu', required=False,
                                choices=[('', '—')] + PropagationMedium.choices)
     hormone = forms.BooleanField(label='Hormone de bouturage', required=False)
+
+
+class SpecieForm(forms.ModelForm):
+    """
+    Espèce créée ou modifiée à la main. Les deux noms suffisent, le reste est
+    optionnel. La clé GBIF n'est pas exposée : une espèce saisie ici n'en a pas,
+    et celle d'une espèce importée ne se touche pas.
+    """
+
+    class Meta:
+        model = Specie
+        fields = [
+            'vernacular_name',
+            'scientific_name',
+            'vernacular_name_en',
+            'description',
+            'image',
+            'taxon_family',
+            'taxon_genus',
+            'min_exposure',
+            'max_exposure',
+            'humidity',
+            'drought_tolerance',
+            'min_temp',
+            'max_temp',
+            'recommended_substrate',
+        ]
+        widgets = {
+            'vernacular_name': forms.TextInput(attrs={'placeholder': 'Monstera, Pilea, ...'}),
+            'scientific_name': forms.TextInput(attrs={'placeholder': 'Genre espèce, en latin'}),
+            'description': forms.Textarea(attrs={'rows': 4}),
+        }
+        labels = {
+            'vernacular_name': 'Nom commun',
+            'scientific_name': 'Nom scientifique',
+            'vernacular_name_en': 'Nom commun en anglais',
+            'description': 'Description',
+            'image': 'Planche',
+            'taxon_family': 'Famille',
+            'taxon_genus': 'Genre',
+            'min_exposure': 'Exposition minimale',
+            'max_exposure': 'Exposition maximale',
+            'humidity': 'Humidité',
+            'drought_tolerance': 'Tolérance à la sécheresse',
+            'min_temp': 'Température minimale (°C)',
+            'max_temp': 'Température maximale (°C)',
+            'recommended_substrate': 'Substrat conseillé',
+        }

@@ -384,3 +384,114 @@ class DeleteTests(TestCase):
         other = Plant.objects.create(user=make_user('autre'))
         self.assertEqual(self.client.post(reverse('delete_plant', args=[other.id])).status_code, 404)
         self.assertTrue(Plant.objects.filter(id=other.id).exists())
+
+
+class SimilarSpeciesTests(TestCase):
+
+    def setUp(self):
+        from Plantes.utils.species import normalize, similar_species
+        self.normalize = normalize
+        self.similar_species = similar_species
+        self.ficus = Specie.objects.create(vernacular_name='Caoutchouc', scientific_name='Ficus elastica')
+        self.monstera = Specie.objects.create(vernacular_name='Monstera', scientific_name='Monstera deliciosa')
+
+    def test_normalisation(self):
+        self.assertEqual(self.normalize('  Ficus  Élastica '), 'ficus elastica')
+
+    def test_faute_de_frappe_detectee(self):
+        matches = self.similar_species('Caoutchouk', 'Ficus elastika')
+
+        self.assertEqual([specie for specie, score in matches], [self.ficus])
+        self.assertGreaterEqual(matches[0][1], 85)
+
+    def test_nom_eloigne_ignore(self):
+        self.assertEqual(self.similar_species('Pilea', 'Pilea peperomioides'), [])
+
+    def test_nom_latin_tape_en_nom_commun(self):
+        matches = self.similar_species('monstera deliciosa', 'Monstéra délicieux')
+
+        self.assertEqual(matches[0][0], self.monstera)
+        self.assertEqual(matches[0][1], 100)
+
+
+class SpeciePagesTests(TestCase):
+
+    def setUp(self):
+        self.user = make_user()
+        self.client.force_login(self.user)
+        self.ficus = Specie.objects.create(vernacular_name='Caoutchouc', scientific_name='Ficus elastica', gbif_key=1234)
+
+    def test_catalogue_propose_d_ajouter_une_espece(self):
+        response = self.client.get(reverse('list_species'))
+        self.assertContains(response, 'Ajouter une espèce')
+        self.assertNotContains(response, 'Ajouter une plante')
+
+        response = self.client.get(reverse('list_species') + '?q=Pilea')
+        self.assertContains(response, 'Ajouter « Pilea » au catalogue')
+
+        response = self.client.get(reverse('add_specie') + '?name=Pilea')
+        self.assertContains(response, 'name="vernacular_name" value="Pilea"')
+
+    def test_creation_simple(self):
+        response = self.client.post(reverse('add_specie'), {
+            'vernacular_name': 'Pilea', 'scientific_name': 'Pilea peperomioides', 'taxon_family': 'Urticaceae',
+        })
+
+        specie = Specie.objects.get(vernacular_name='Pilea')
+        self.assertRedirects(response, reverse('detail_specie', args=[specie.id]))
+        self.assertIsNone(specie.gbif_key)
+        self.assertEqual(specie.taxon_family, 'Urticaceae')
+
+        response = self.client.get(reverse('detail_specie', args=[specie.id]))
+        self.assertContains(response, 'espèce ajoutée à la main')
+        self.assertContains(response, 'Modifier la fiche')
+
+    def test_ressemblance_demande_confirmation(self):
+        data = {'vernacular_name': 'Caoutchouk', 'scientific_name': 'Ficus elastika'}
+
+        response = self.client.post(reverse('add_specie'), data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ressemble fort')
+        self.assertContains(response, 'Caoutchouc (Ficus elastica)')
+        self.assertContains(response, 'Créer quand même')
+        self.assertContains(response, 'name="confirmed" value="1"')
+        self.assertFalse(Specie.objects.filter(vernacular_name='Caoutchouk').exists())
+
+        response = self.client.post(reverse('add_specie'), {**data, 'confirmed': '1'})
+
+        specie = Specie.objects.get(vernacular_name='Caoutchouk')
+        self.assertRedirects(response, reverse('detail_specie', args=[specie.id]))
+
+    def test_creation_a_la_volee_en_json(self):
+        headers = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
+        data = {'vernacular_name': 'Caoutchouk', 'scientific_name': 'Ficus elastika'}
+
+        response = self.client.post(reverse('add_specie'), data, **headers)
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()['similar'][0]['id'], self.ficus.id)
+        self.assertEqual(response.json()['similar'][0]['label'], 'Caoutchouc (Ficus elastica)')
+
+        response = self.client.post(reverse('add_specie'), {**data, 'confirmed': '1'}, **headers)
+        self.assertEqual(response.status_code, 200)
+        specie = Specie.objects.get(vernacular_name='Caoutchouk')
+        self.assertEqual(response.json(), {'id': specie.id, 'name': 'Caoutchouk (Ficus elastika)'})
+
+        response = self.client.post(reverse('add_specie'), {'vernacular_name': 'Seul'}, **headers)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('scientific_name', response.json()['errors'])
+
+    def test_modification(self):
+        response = self.client.post(reverse('edit_specie', args=[self.ficus.id]), {
+            'vernacular_name': 'Caoutchouc', 'scientific_name': 'Ficus elastica', 'min_temp': 15, 'max_temp': 30,
+        })
+
+        self.assertRedirects(response, reverse('detail_specie', args=[self.ficus.id]))
+        self.ficus.refresh_from_db()
+        self.assertEqual((self.ficus.min_temp, self.ficus.max_temp, self.ficus.gbif_key), (15, 30, 1234))
+
+    def test_formulaire_plante_embarque_la_boite_espece(self):
+        response = self.client.get(reverse('add_plant'))
+
+        self.assertContains(response, 'id="dialog-specie"')
+        self.assertContains(response, 'data-create-dialog="dialog-specie"')

@@ -10,12 +10,18 @@
 
         <div class="field autocomplete{% if form.specie.errors %} field--error{% endif %}">
             <label class="field__label" for="specie-search">Espèce</label>
-            <input type="text" id="specie-search"
-                   value="{{ selected_specie|default:'' }}"
-                   data-autocomplete-url="{% url 'search_species' %}"
-                   data-target="{{ form.specie.auto_id }}"
-                   placeholder="Tape au moins 2 caractères, nom commun ou latin"
-                   autocomplete="off">
+            <div class="field__inline">
+                {# Espèce absente du catalogue : la boîte « Nouvelle espèce », aussi proposée quand la recherche ne trouve rien #}
+                <input type="text" id="specie-search"
+                       value="{{ selected_specie|default:'' }}"
+                       data-autocomplete-url="{% url 'search_species' %}"
+                       data-target="{{ form.specie.auto_id }}"
+                       data-create-dialog="dialog-specie"
+                       data-create-field="vernacular_name"
+                       placeholder="Tape au moins 2 caractères, nom commun ou latin"
+                       autocomplete="off">
+                <button class="btn" type="button" data-opens="dialog-specie">Nouvelle</button>
+            </div>
             <ul class="autocomplete__list" data-suggestions-for="{{ form.specie.auto_id }}"></ul>
             {{ form.specie }}
             {{ form.specie.errors }}
@@ -100,6 +106,31 @@
         <a class="btn btn--ghost" href="{{ cancel_url }}">Annuler</a>
     </div>
 </form>
+
+
+{# Création d'espèce à la volée : identifiant dans le champ caché, libellé dans le champ de recherche. #}
+{# En cas de ressemblance avec le catalogue, le serveur répond 409 et quick_add.js affiche les espèces proches #}
+<dialog id="dialog-specie" data-post-url="{% url 'add_specie' %}" data-target="{{ form.specie.auto_id }}" data-label-target="specie-search">
+    <div class="dialog__head">
+        <h2>Nouvelle espèce</h2>
+    </div>
+    <p class="quiet">Hors catalogue GBIF. Les deux noms suffisent, le reste se complète depuis sa fiche.</p>
+    <p class="errorlist" data-errors></p>
+
+    <form class="form" method="dialog">
+        {% csrf_token %}
+        <input type="hidden" name="confirmed" value="">
+        {% include "includes/_field.html" with field=specie_form.vernacular_name %}
+        {% include "includes/_field.html" with field=specie_form.scientific_name %}
+
+        <div class="similar" data-similar></div>
+
+        <div class="dialog__actions">
+            <button class="btn btn--ghost" type="button" onclick="this.closest('dialog').close()">Annuler</button>
+            <button class="btn btn--primary" type="submit">Créer l'espèce</button>
+        </div>
+    </form>
+</dialog>
 
 
 <dialog id="dialog-spot" data-post-url="{% url 'add_spot' %}" data-target="{{ form.spot.auto_id }}">

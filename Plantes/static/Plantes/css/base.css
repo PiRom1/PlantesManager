@@ -1145,6 +1145,27 @@ dialog::backdrop {
     background: transparent;
 }
 
+/* Espèces ressemblantes, proposées avant de créer un doublon */
+.similar:empty {
+    display: none;
+}
+
+.similar ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    margin: var(--sp-3) 0;
+    padding: 0;
+    list-style: none;
+}
+
+.similar li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+}
+
 /* Autocomplétion : la liste de suggestions se superpose au champ */
 .autocomplete {
     position: relative;

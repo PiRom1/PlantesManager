@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from Plantes.forms import PlantForm, PlantHistoryForm, PlantImageForm, PotForm, PropagationForm, SpotForm
+from Plantes.forms import PlantForm, PlantHistoryForm, PlantImageForm, PotForm, PropagationForm, SpecieForm, SpotForm
 from Plantes.models import Action, DetailFieldType, Plant, PlantHistory, PlantState, Pot, Specie, Spot
 
 
@@ -125,7 +125,7 @@ def add_plant(request):
         restrict_to_user(form, request.user)
 
     context = {'form' : form, 'selected_specie' : selected_specie(form),
-               'spot_form' : SpotForm(), 'pot_form' : PotForm()}
+               'spot_form' : SpotForm(), 'pot_form' : PotForm(), 'specie_form' : SpecieForm()}
 
     return render(request, url, context)
 
@@ -175,7 +175,7 @@ def add_cutting(request, id_plant: int):
         propagation_form = PropagationForm()
 
     context = {'form' : form, 'selected_specie' : selected_specie(form), 'mother' : mother,
-               'propagation_form' : propagation_form, 'spot_form' : SpotForm(), 'pot_form' : PotForm()}
+               'propagation_form' : propagation_form, 'spot_form' : SpotForm(), 'pot_form' : PotForm(), 'specie_form' : SpecieForm()}
 
     return render(request, url, context)
 
@@ -381,7 +381,7 @@ def edit_plant(request, id_plant: int):
         restrict_to_user(form, request.user)
 
     context = {'form' : form, 'plant' : plant, 'selected_specie' : selected_specie(form),
-               'spot_form' : SpotForm(), 'pot_form' : PotForm()}
+               'spot_form' : SpotForm(), 'pot_form' : PotForm(), 'specie_form' : SpecieForm()}
 
     return render(request, url, context)
 

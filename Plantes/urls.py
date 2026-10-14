@@ -10,7 +10,9 @@ urlpatterns = [
 
     # Species
     path('species/', species_views.list_species, name='list_species'),
+    path('species/add/', species_views.add_specie, name='add_specie'),
     path('specie/<int:id_specie>/', species_views.detail_specie, name='detail_specie'),
+    path('specie/<int:id_specie>/edit/', species_views.edit_specie, name='edit_specie'),
     path('api/species/search/', species_views.search_species, name='search_species'),
 
     # Plants

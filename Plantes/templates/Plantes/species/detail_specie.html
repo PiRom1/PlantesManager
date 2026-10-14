@@ -16,6 +16,7 @@
             </p>
         </div>
         <div class="page-head__actions">
+            <a class="btn" href="{% url 'edit_specie' specie.id %}">Modifier la fiche</a>
             <a class="btn btn--primary" href="{% url 'add_plant' %}?specie={{ specie.id }}">J'ai cette plante chez moi</a>
         </div>
     </header>
@@ -113,7 +114,7 @@
                         {% if specie.gbif_key %}
                             <a href="https://www.gbif.org/species/{{ specie.gbif_key }}" rel="noopener">{{ specie.gbif_key }}</a>
                         {% else %}
-                            —
+                            <span class="quiet">Aucune : espèce ajoutée à la main</span>
                         {% endif %}
                     </dd>
                 </dl>

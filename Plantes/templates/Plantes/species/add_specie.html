@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvelle espèce — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <header class="page-head">
+        <div>
+            {% url 'list_species' as back_url %}
+            {% include "includes/_back.html" with url=back_url label="Catalogue d'espèces" %}
+            <h1 class="page-head__title">Nouvelle espèce</h1>
+            <p class="page-head__sub">Hors catalogue GBIF. Les deux noms suffisent, le reste est optionnel.</p>
+        </div>
+    </header>
+
+    {# Ressemblance avec le catalogue : on prévient, et le même formulaire renvoyé confirme #}
+    {% if similar %}
+        <section class="notice notice--error similar">
+            <p><strong>Attention</strong>, ton espèce ressemble fort à une espèce déjà au catalogue. Es-tu sûr que ce n'était pas celle que tu cherchais ?</p>
+            <ul>
+                {% for specie, score in similar %}
+                    <li>
+                        <span>{{ specie }} <span class="quiet">({{ score }} % de ressemblance)</span></span>
+                        <a class="btn btn--small" href="{% url 'detail_specie' specie.id %}">C'est celle-ci</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+
+    <div class="panel">
+        <form class="form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% if similar %}
+                <input type="hidden" name="confirmed" value="1">
+            {% endif %}
+
+            {% include "Plantes/species/_specie_fields.html" %}
+
+            <div class="form__actions">
+                {% if similar %}
+                    <button class="btn btn--danger" type="submit">Créer quand même</button>
+                {% else %}
+                    <button class="btn btn--primary" type="submit">Créer l'espèce</button>
+                {% endif %}
+                <a class="btn btn--ghost" href="{% url 'list_species' %}">Annuler</a>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}

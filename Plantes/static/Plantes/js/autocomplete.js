@@ -1,8 +1,12 @@
 // Autocomplétion sur un champ texte : interroge une URL JSON après une pause
 // de frappe, et écrit l'identifiant choisi dans un champ caché.
 //
+// Sans résultat, peut proposer de créer l'objet manquant dans une boîte de
+// dialogue, avec le texte tapé déjà recopié dans l'un de ses champs.
+//
 // Balisage attendu :
-//   <input type="text"   data-autocomplete-url="..." data-target="id_specie">
+//   <input type="text"   data-autocomplete-url="..." data-target="id_specie"
+//          data-create-dialog="dialog-specie" data-create-field="vernacular_name">  (les deux derniers optionnels)
 //   <ul    data-suggestions-for="id_specie"></ul>
 //   <input type="hidden" name="specie" id="id_specie">
 
@@ -27,11 +31,39 @@ function setupAutocomplete(input) {
         clearSuggestions();
     }
 
-    function showSuggestions(results) {
+    // Ouvre la boîte de création avec le texte cherché déjà en place
+    function offerCreation(item, query) {
+        const dialog = document.getElementById(input.dataset.createDialog);
+        const link = document.createElement('a');
+
+        link.href = '#';
+        link.textContent = `Créer l'espèce « ${query} »`;
+        link.addEventListener('click', event => {
+            event.preventDefault();
+            clearSuggestions();
+
+            if (input.dataset.createField) {
+                dialog.querySelector('form').elements[input.dataset.createField].value = query;
+            }
+
+            dialog.showModal();
+        });
+
+        item.appendChild(link);
+    }
+
+    function showSuggestions(results, query) {
         clearSuggestions();
 
         if (results.length === 0) {
-            suggestions.innerHTML = '<li>Aucun résultat</li>';
+            const item = document.createElement('li');
+            item.textContent = 'Aucun résultat. ';
+
+            if (input.dataset.createDialog) {
+                offerCreation(item, query);
+            }
+
+            suggestions.appendChild(item);
             return;
         }
 
@@ -61,7 +93,7 @@ function setupAutocomplete(input) {
 
         fetch(`${input.dataset.autocompleteUrl}?q=${encodeURIComponent(query)}`)
             .then(response => response.json())
-            .then(data => showSuggestions(data.results));
+            .then(data => showSuggestions(data.results, query));
     }
 
     input.addEventListener('input', () => {

@@ -1,0 +1,46 @@
+{# Champs d'une espèce, communs à la création et à la modification. Attend `form`. #}
+
+{{ form.non_field_errors }}
+
+<div class="form__group">
+    <span class="form__group-title">Identité</span>
+
+    <div class="form__row">
+        {% include "includes/_field.html" with field=form.vernacular_name %}
+        {% include "includes/_field.html" with field=form.scientific_name %}
+    </div>
+
+    {% include "includes/_field.html" with field=form.vernacular_name_en %}
+    {% include "includes/_field.html" with field=form.description %}
+    {% include "includes/_field.html" with field=form.image %}
+</div>
+
+<div class="form__group">
+    <span class="form__group-title">Taxonomie</span>
+
+    <div class="form__row">
+        {% include "includes/_field.html" with field=form.taxon_family %}
+        {% include "includes/_field.html" with field=form.taxon_genus %}
+    </div>
+</div>
+
+<div class="form__group">
+    <span class="form__group-title">Exigences</span>
+
+    <div class="form__row">
+        {% include "includes/_field.html" with field=form.min_exposure %}
+        {% include "includes/_field.html" with field=form.max_exposure %}
+    </div>
+
+    <div class="form__row">
+        {% include "includes/_field.html" with field=form.humidity %}
+        {% include "includes/_field.html" with field=form.drought_tolerance %}
+    </div>
+
+    <div class="form__row">
+        {% include "includes/_field.html" with field=form.min_temp %}
+        {% include "includes/_field.html" with field=form.max_temp %}
+    </div>
+
+    {% include "includes/_field.html" with field=form.recommended_substrate %}
+</div>

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Modifier {{ specie.vernacular_name }} — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <header class="page-head">
+        <div>
+            {% url 'detail_specie' specie.id as back_url %}
+            {% include "includes/_back.html" with url=back_url label="Retour à la fiche" %}
+            <h1 class="page-head__title">Modifier {{ specie.vernacular_name }}</h1>
+            <p class="page-head__sub"><span class="latin">{{ specie.scientific_name }}</span></p>
+        </div>
+    </header>
+
+    <div class="panel">
+        <form class="form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            {% include "Plantes/species/_specie_fields.html" %}
+
+            <div class="form__actions">
+                <button class="btn btn--primary" type="submit">Enregistrer les modifications</button>
+                <a class="btn btn--ghost" href="{{ back_url }}">Annuler</a>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}

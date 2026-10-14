@@ -17,7 +17,8 @@
             </p>
         </div>
         <div class="page-head__actions">
-            <a class="btn" href="{% url 'add_plant' %}">Ajouter une plante</a>
+            {# Ici on enrichit le catalogue ; l'ajout à la collection se fait depuis la fiche espèce ou Mes plantes #}
+            <a class="btn" href="{% url 'add_specie' %}">Ajouter une espèce</a>
         </div>
     </header>
 
@@ -120,7 +121,10 @@
             {% include "includes/_icon_leaf.html" %}
             {% if query %}
                 <p>Aucune espèce ne correspond à « {{ query }} ». Essaie avec le nom latin, ou un mot plus court.</p>
-                <a class="btn" href="{% url 'list_species' %}">Voir tout le catalogue</a>
+                <div class="row">
+                    <a class="btn btn--primary" href="{% url 'add_specie' %}?name={{ query|urlencode }}">Ajouter « {{ query }} » au catalogue</a>
+                    <a class="btn" href="{% url 'list_species' %}">Voir tout le catalogue</a>
+                </div>
             {% else %}
                 <p>Le catalogue est vide. Lance le script de peuplement des espèces pour l'alimenter depuis GBIF.</p>
             {% endif %}

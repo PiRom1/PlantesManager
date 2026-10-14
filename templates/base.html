@@ -36,7 +36,7 @@
         </a>
 
         <nav class="nav" aria-label="Navigation principale">
-            <a class="nav__link {% if active in 'list_plants add_plant detail_plant edit_plant' %}nav__link--active{% endif %}" href="{% url 'list_plants' %}">
+            <a class="nav__link {% if active in 'list_plants add_plant detail_plant edit_plant add_cutting' %}nav__link--active{% endif %}" href="{% url 'list_plants' %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M12 22V12"/>
                     <path d="M12 12C12 7 8 4 4 4c0 5 3 8 8 8Z"/>
@@ -59,7 +59,7 @@
                 </svg>
                 Pots
             </a>
-            <a class="nav__link {% if active in 'list_species detail_specie' %}nav__link--active{% endif %}" href="{% url 'list_species' %}">
+            <a class="nav__link {% if active in 'list_species detail_specie add_specie edit_specie' %}nav__link--active{% endif %}" href="{% url 'list_species' %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M4 4h6a2 2 0 0 1 2 2v14a1 1 0 0 0-1-1H4Z"/>
                     <path d="M20 4h-6a2 2 0 0 0-2 2v14a1 1 0 0 1 1-1h7Z"/>
