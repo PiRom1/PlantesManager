@@ -604,14 +604,17 @@ h3 {
     cursor: help;
 }
 
+/* Halo : un anneau net, puis un dégradé de plusieurs pixels, pour que la couleur se lise de loin */
 .specimen__pest--suspicion {
     border-color: var(--ochre);
-    box-shadow: 0 0 0 2px var(--ochre-soft);
+    background: rgba(210, 179, 110, 0.22);
+    box-shadow: 0 0 0 3px rgba(210, 179, 110, 0.45), 0 0 14px 6px rgba(210, 179, 110, 0.35);
 }
 
 .specimen__pest--confirmed {
     border-color: var(--danger);
-    box-shadow: 0 0 0 2px var(--danger-soft);
+    background: rgba(224, 128, 112, 0.22);
+    box-shadow: 0 0 0 3px rgba(224, 128, 112, 0.5), 0 0 14px 6px rgba(224, 128, 112, 0.4);
 }
 
 .specimen__name {
