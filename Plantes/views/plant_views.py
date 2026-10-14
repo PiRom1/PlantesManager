@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from Plantes.forms import PlantForm, PlantHistoryForm, PlantImageForm, PotForm, SpotForm
-from Plantes.models import Action, DetailFieldType, Plant, PlantHistory, Pot, Specie, Spot
+from Plantes.models import Action, DetailFieldType, Plant, PlantHistory, PlantState, Pot, Specie, Spot
 
 
 def restrict_to_user(form, user):
@@ -59,12 +59,17 @@ def list_plants(request):
 
     url = 'Plantes/plants/list_plants.html'
 
-    plants = (Plant.objects
-              .filter(user=request.user)
-              .select_related('specie', 'state', 'spot', 'pot', 'substrate')
-              .order_by('specie__vernacular_name'))
+    plants = list(Plant.objects
+                  .filter(user=request.user)
+                  .select_related('specie', 'state', 'spot', 'pot', 'substrate')
+                  .order_by('specie__vernacular_name'))
 
-    context = {'all_plants' : plants}
+    # Filtre « parasitées » : /plants/?filter=pests, le statut vient du journal
+    pests_only = request.GET.get('filter') == 'pests'
+    infested = [plant for plant in plants if plant.pest_episode]
+
+    context = {'all_plants' : infested if pests_only else plants,
+               'total' : len(plants), 'infested_count' : len(infested), 'pests_only' : pests_only}
 
     return render(request, url, context)
 
@@ -124,6 +129,12 @@ def build_detail(action, posted):
             detail[field.name] = key in posted
             continue
 
+        if field.type == DetailFieldType.TAGS:
+            tags = clean_tags(posted.getlist(key), field.choices)
+            if tags:
+                detail[field.name] = tags
+            continue
+
         value = posted.get(key, '').strip()
 
         if not value:
@@ -149,25 +160,56 @@ def build_detail(action, posted):
     return detail
 
 
-def detail_groups(actions, entry=None):
+def clean_tags(posted_values, choices):
+    """
+    Valeurs d'un champ à choix multiples : une par pastille, sans vide ni
+    doublon. Un texte tapé qui correspond à un libellé proposé est ramené à
+    son code, pour que le journal l'affiche comme les autres.
+    """
+
+    codes_by_label = {label.lower(): code for code, label in choices}
+    tags = []
+
+    for raw in posted_values:
+        value = raw.strip()
+        value = codes_by_label.get(value.lower(), value)
+
+        if value and value not in tags:
+            tags.append(value)
+
+    return tags
+
+
+def detail_groups(actions, entry=None, presets=None):
     """
     Champs de détail de chaque action, prêts pour le template : (action, [(champ,
     id du champ, valeur)]). Les valeurs viennent de l'entrée modifiée, s'il y en
-    a une et que c'est bien son action.
+    a une et que c'est bien son action, sinon des préréglages par code d'action
+    (ex. les parasites de l'épisode en cours pour un traitement).
+
+    Pour un champ à choix multiples, la valeur est une liste de (code, libellé).
     """
 
+    presets = presets or {}
     groups = []
 
     for action in actions:
         if not action.detail_fields:
             continue
 
-        values = {}
+        values = presets.get(action.code, {})
         if entry and entry.action_id == action.id and entry.detail:
             values = entry.detail
 
-        fields = [(field, f'detail_{action.code}_{field.name}', values.get(field.name))
-                  for field in action.detail_fields]
+        fields = []
+        for field in action.detail_fields:
+            current = values.get(field.name)
+
+            if field.type == DetailFieldType.TAGS and current:
+                current = [(code, field.display(code)) for code in current]
+
+            fields.append((field, f'detail_{action.code}_{field.name}', current))
+
         groups.append((action, fields))
 
     return groups
@@ -214,18 +256,30 @@ def detail_plant(request, id_plant: int):
             return redirect('detail_plant', id_plant=plant.id)
 
     else:
-        history_form = PlantHistoryForm(initial={'date': timezone.localtime()})
+        # Journal ouvert d'office et prérempli depuis l'URL :
+        # ?action=CHECK_PESTS pour une inspection, ?state=DEAD pour déclarer la plante morte
+        initial = {'date': timezone.localtime()}
+        initial['action'] = Action.objects.filter(code=request.GET.get('action', '')).first()
+        initial['state'] = PlantState.objects.filter(code=request.GET.get('state', '')).first()
+
+        history_form = PlantHistoryForm(initial=initial)
+
+    open_journal = bool(history_form.errors or history_form.initial.get('action') or history_form.initial.get('state'))
 
     history = list(PlantHistory.objects
                    .filter(plant=plant)
                    .select_related('action', 'state')
                    .order_by('-date', '-id'))
 
-    # Tous les groupes de champs sont rendus, le JS n'affiche que le bon
+    # Tous les groupes de champs sont rendus, le JS n'affiche que le bon.
+    # Un traitement vise par défaut les parasites de l'épisode en cours
     actions = Action.objects.all().order_by('name')
+    presets = {}
+    if plant.pest_episode:
+        presets['TREAT_PESTS'] = {'pests': plant.pest_episode.pest_codes}
 
     context = {'plant' : plant, 'history' : mark_state_changes(history), 'history_form' : history_form,
-               'detail_groups' : detail_groups(actions)}
+               'detail_groups' : detail_groups(actions, presets=presets), 'open_journal' : open_journal}
 
     return render(request, url, context)
 

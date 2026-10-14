@@ -39,6 +39,26 @@
                         {# Pas de virgule française : le champ number ne la comprend pas #}
                         <input type="number" step="any" name="{{ input_id }}" id="{{ input_id }}" value="{{ current|default_if_none:''|unlocalize }}">
 
+                    {% elif field.type == 'tags' %}
+                        {# Choix multiples et saisie libre : une pastille par valeur, chacune avec #}
+                        {# son champ caché ; le champ texte sert à en ajouter (tags_input.js) #}
+                        <div class="tags" data-tags-input data-name="{{ input_id }}">
+                            {% for value, label in current %}
+                                <span class="tags__chip">
+                                    {{ label }}
+                                    <button class="tags__remove" type="button" aria-label="Retirer {{ label }}">×</button>
+                                    <input type="hidden" name="{{ input_id }}" value="{{ value }}">
+                                </span>
+                            {% endfor %}
+                            <input type="text" class="tags__input" id="{{ input_id }}" list="{{ input_id }}-choices"
+                                   placeholder="Choisis ou tape, puis Entrée" autocomplete="off">
+                            <datalist id="{{ input_id }}-choices">
+                                {% for value, label in field.choices %}
+                                    <option value="{{ label }}" data-code="{{ value }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+
                     {% else %}
                         <input type="text" name="{{ input_id }}" id="{{ input_id }}" value="{{ current|default_if_none:'' }}">
                     {% endif %}

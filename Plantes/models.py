@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import cached_property
 
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
@@ -79,6 +80,7 @@ class DetailFieldType(models.TextChoices):
     DECIMAL = 'decimal', 'Nombre décimal'
     TEXT = 'text', 'Texte libre'
     BOOLEAN = 'boolean', 'Oui / non'
+    TAGS = 'tags', 'Choix multiples et saisie libre'
 
 
 class WaterType(models.TextChoices):
@@ -142,19 +144,21 @@ class CleaningMethod(models.TextChoices):
 
 
 class PestCheckResult(models.TextChoices):
-    CLEAR = 'CLEAR', 'Rien à signaler'
+    # Seule une inspection « Absence » clôt un épisode parasitaire :
+    # un traitement ne dit rien de son efficacité
+    CLEAR = 'CLEAR', 'Absence'
     SUSPICION = 'SUSPICION', 'Suspicion'
-    CONFIRMED = 'CONFIRMED', 'Infestation confirmée'
+    CONFIRMED = 'CONFIRMED', 'Présence'
 
 
 class Pest(models.TextChoices):
+    # Choix proposés : le champ accepte aussi n'importe quel nom tapé à la main
     MEALYBUG = 'MEALYBUG', 'Cochenille farineuse'
     SCALE = 'SCALE', 'Cochenille à bouclier'
     SPIDER_MITE = 'SPIDER_MITE', 'Araignées rouges'
     THRIPS = 'THRIPS', 'Thrips'
     APHID = 'APHID', 'Pucerons'
     FUNGUS_GNAT = 'FUNGUS_GNAT', 'Mouches du terreau'
-    OTHER = 'OTHER', 'Autre'
 
 
 class PestSeverity(models.TextChoices):
@@ -164,12 +168,16 @@ class PestSeverity(models.TextChoices):
 
 
 class PestTreatment(models.TextChoices):
-    NONE = 'NONE', 'Aucun'
+    # Choix proposés : le champ accepte aussi un produit tapé à la main
     MANUAL = 'MANUAL', 'Retrait manuel'
+    SHOWER = 'SHOWER', 'Douche ou rinçage'
     BLACK_SOAP = 'BLACK_SOAP', 'Savon noir'
     NEEM = 'NEEM', 'Huile de neem'
-    ALCOHOL = 'ALCOHOL', 'Alcool'
-    INSECTICIDE = 'INSECTICIDE', 'Insecticide'
+    ALCOHOL = 'ALCOHOL', 'Alcool à 70°'
+    INSECTICIDE = 'INSECTICIDE', 'Insecticide chimique'
+    BENEFICIALS = 'BENEFICIALS', 'Auxiliaires (coccinelles, nématodes...)'
+    STICKY_TRAPS = 'STICKY_TRAPS', 'Pièges collants jaunes'
+    QUARANTINE = 'QUARANTINE', 'Mise en quarantaine'
 
 
 class PropagationMethod(models.TextChoices):
@@ -192,9 +200,10 @@ class DetailField:
     """
     Un champ de détail saisi lors d'une action.
 
-    `choices` n'a de sens que pour un champ de type SELECT ; la cohérence est
-    vérifiée à l'import, donc une faute de frappe casse au démarrage plutôt
-    que de passer inaperçue au rendu.
+    `choices` n'a de sens que pour un champ SELECT (obligatoires) ou TAGS
+    (suggestions, la saisie libre reste possible) ; la cohérence est vérifiée
+    à l'import, donc une faute de frappe casse au démarrage plutôt que de
+    passer inaperçue au rendu.
     """
 
     name: str
@@ -209,8 +218,24 @@ class DetailField:
         if self.type == DetailFieldType.SELECT and not self.choices:
             raise ValueError(f'{self.name} : un champ select doit avoir des choix')
 
-        if self.type != DetailFieldType.SELECT and self.choices:
-            raise ValueError(f"{self.name} : seul un champ select accepte des choix")
+        if self.type not in (DetailFieldType.SELECT, DetailFieldType.TAGS) and self.choices:
+            raise ValueError(f"{self.name} : seuls les champs select et tags acceptent des choix")
+
+    def display(self, value):
+        """Valeur stockée dans le JSON rendue lisible : libellés à la place des codes."""
+
+        if self.type == DetailFieldType.SELECT:
+            return dict(self.choices).get(value, value)
+
+        if self.type == DetailFieldType.BOOLEAN:
+            return 'oui' if value else 'non'
+
+        if self.type == DetailFieldType.TAGS:
+            labels = dict(self.choices)
+            values = value if isinstance(value, list) else [value]
+            return ', '.join(str(labels.get(item, item)) for item in values)
+
+        return value
 
 
 ########## Generic models ##########
@@ -230,7 +255,7 @@ class Action(models.Model):
     # Champs de détail saisis lors de la réalisation de l'action, par code.
     # Seule source de vérité : le formulaire, la validation au POST et
     # l'affichage de l'historique sont tous construits à partir d'ici.
-    # Types acceptés : 'select', 'integer', 'decimal', 'text', 'boolean'.
+    # Types acceptés : 'select', 'integer', 'decimal', 'text', 'boolean', 'tags'.
     DETAIL_FIELDS = {
 
         'WATER': [
@@ -276,11 +301,18 @@ class Action(models.Model):
             DetailField('product', 'Produit', DetailFieldType.TEXT),
         ],
 
+        # L'inspection constate, le traitement agit : seule une inspection
+        # « Absence » met fin à un épisode parasitaire (voir Plant.pest_episode)
         'CHECK_PESTS': [
             DetailField('result', 'Résultat', DetailFieldType.SELECT, PestCheckResult.choices),
-            DetailField('pest', 'Parasite', DetailFieldType.SELECT, Pest.choices),
+            DetailField('pests', 'Parasites', DetailFieldType.TAGS, Pest.choices),
             DetailField('severity', 'Gravité', DetailFieldType.SELECT, PestSeverity.choices),
-            DetailField('treatment', 'Traitement', DetailFieldType.SELECT, PestTreatment.choices),
+        ],
+
+        'TREAT_PESTS': [
+            DetailField('pests', 'Parasites ciblés', DetailFieldType.TAGS, Pest.choices),
+            DetailField('treatment', 'Traitement', DetailFieldType.TAGS, PestTreatment.choices),
+            DetailField('dose', 'Dose ou dilution', DetailFieldType.TEXT),
         ],
 
         'PROPAGATE': [
@@ -303,6 +335,16 @@ class Action(models.Model):
         """Champs de détail de cette action (liste vide si elle n'en a pas)."""
 
         return self.DETAIL_FIELDS.get(self.code, [])
+
+    @classmethod
+    def detail_field(cls, code, name):
+        """Le champ de détail `name` de l'action `code`, pour lire un JSON hors du journal."""
+
+        for field in cls.DETAIL_FIELDS.get(code, []):
+            if field.name == name:
+                return field
+
+        raise KeyError(f'{code} : pas de champ de détail {name}')
 
 
 
@@ -498,6 +540,82 @@ class CareRule(models.Model):
 ########## Specific models ##########
 
 
+@dataclass(frozen=True)
+class PestEpisode:
+    """
+    Épisode parasitaire en cours d'une plante, déduit de son journal.
+
+    `inspections` : les inspections positives (suspicion ou présence) depuis la
+    dernière « Absence », de la plus ancienne à la plus récente. `treatments` :
+    les traitements notés depuis la première, de la plus récente à la plus
+    ancienne.
+    """
+
+    inspections: list
+    treatments: list
+
+    @property
+    def opening(self):
+        return self.inspections[0]
+
+    @property
+    def latest(self):
+        return self.inspections[-1]
+
+    @property
+    def since(self):
+        return self.opening.date
+
+    @property
+    def result(self):
+        return (self.latest.detail or {}).get('result')
+
+    @property
+    def confirmed(self):
+        return self.result == PestCheckResult.CONFIRMED
+
+    @property
+    def result_label(self):
+        return Action.detail_field('CHECK_PESTS', 'result').display(self.result)
+
+    @property
+    def pest_codes(self):
+        """Parasites cités au fil de l'épisode, les plus récents d'abord, sans doublon."""
+
+        codes = []
+
+        for inspection in reversed(self.inspections):
+            for code in (inspection.detail or {}).get('pests') or []:
+                if code not in codes:
+                    codes.append(code)
+
+        return codes
+
+    @property
+    def pests(self):
+        return Action.detail_field('CHECK_PESTS', 'pests').display(self.pest_codes)
+
+    @property
+    def severity(self):
+        severity = (self.latest.detail or {}).get('severity')
+
+        return Action.detail_field('CHECK_PESTS', 'severity').display(severity) if severity else None
+
+    @property
+    def treatment_lines(self):
+        """Traitements de l'épisode, lisibles : (entrée, traitement, dose)."""
+
+        field = Action.detail_field('TREAT_PESTS', 'treatment')
+        lines = []
+
+        for entry in self.treatments:
+            detail = entry.detail or {}
+            treatment = field.display(detail.get('treatment') or []) or 'Traitement non précisé'
+            lines.append((entry, treatment, detail.get('dose')))
+
+        return lines
+
+
 class Plant(models.Model):
     """
     A real plant, that belongs to a user
@@ -518,9 +636,20 @@ class Plant(models.Model):
     spot = models.ForeignKey(Spot, on_delete=models.SET_NULL, null=True, blank=True)
     pot = models.ForeignKey(Pot, on_delete=models.SET_NULL, null=True, blank=True)
     substrate = models.ForeignKey(Substrate, on_delete=models.SET_NULL, default=None, null=True, blank=True)
-    
+
+    # Équipement propre à la plante, qui se cumule avec celui de l'emplacement
+    has_additional_light = models.BooleanField(default=False)
+    has_heater = models.BooleanField(default=False)
+    has_moister = models.BooleanField(default=False)
+
     creation_date = models.DateTimeField(auto_now_add=True)
     last_modification_date = models.DateTimeField(auto_now=True, null = True, blank = True)
+
+    EQUIPMENT_LABELS = [
+        ('has_additional_light', "Éclairage d'appoint"),
+        ('has_heater', 'Chauffage'),
+        ('has_moister', 'Humidificateur'),
+    ]
 
     def __str__(self):
         if self.surname:
@@ -541,6 +670,70 @@ class Plant(models.Model):
 
         self.state = last.state if last else None
         self.save(update_fields=['state'])
+
+    @property
+    def equipment(self):
+        """
+        Équipement effectif : celui de l'emplacement et celui de la plante se
+        cumulent. Liste de (libellé, provenance).
+        """
+
+        items = []
+
+        for field, label in self.EQUIPMENT_LABELS:
+            own = getattr(self, field)
+            from_spot = bool(self.spot and getattr(self.spot, field))
+
+            if own and from_spot:
+                items.append((label, 'plante et emplacement'))
+            elif own:
+                items.append((label, 'plante'))
+            elif from_spot:
+                items.append((label, 'emplacement'))
+
+        return items
+
+    @cached_property
+    def pest_episode(self):
+        """
+        Épisode parasitaire en cours, déduit du journal, ou None.
+
+        Seule une inspection fait foi : l'épisode s'ouvre à la première
+        inspection positive (suspicion ou présence) qui suit la dernière
+        inspection « Absence », et reste ouvert tant qu'aucune inspection ne
+        constate l'absence. Les traitements notés depuis l'ouverture sont
+        joints mais ne ferment jamais l'épisode : un traitement ne dit rien
+        de son efficacité.
+        """
+
+        entries = list(self.planthistory_set
+                       .filter(action__code__in=['CHECK_PESTS', 'TREAT_PESTS'])
+                       .select_related('action')
+                       .order_by('date', 'id'))
+
+        inspections = []
+
+        for entry in entries:
+            if entry.action.code != 'CHECK_PESTS':
+                continue
+
+            result = (entry.detail or {}).get('result')
+
+            if result in (PestCheckResult.SUSPICION, PestCheckResult.CONFIRMED):
+                inspections.append(entry)
+            elif result == PestCheckResult.CLEAR:
+                inspections = []
+            # Inspection sans résultat : elle ne dit rien, on l'ignore
+
+        if not inspections:
+            return None
+
+        opening = inspections[0]
+        treatments = [entry for entry in entries
+                      if entry.action.code == 'TREAT_PESTS'
+                      and (entry.date, entry.id) >= (opening.date, opening.id)]
+
+        return PestEpisode(inspections=inspections, treatments=treatments[::-1])
 
 
 
@@ -588,14 +781,7 @@ class PlantHistory(models.Model):
             if field.name not in self.detail:
                 continue
 
-            value = self.detail[field.name]
-
-            if field.type == DetailFieldType.SELECT:
-                value = dict(field.choices).get(value, value)
-            elif field.type == DetailFieldType.BOOLEAN:
-                value = 'oui' if value else 'non'
-
-            summary.append((field.label, value))
+            summary.append((field.label, field.display(self.detail[field.name])))
 
         return summary
 

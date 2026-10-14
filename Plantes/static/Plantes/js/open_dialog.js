@@ -4,6 +4,8 @@
 //   <button data-opens="dialog-history">
 //   <dialog id="dialog-history" data-open-on-load>   (ouverte dès le chargement,
 //                                                     ex. formulaire en erreur)
+//   <dialog id="dialog-history" data-open-on-load data-focus="id_comment">
+//                                                    (idem, curseur placé sur ce champ)
 //   <button data-opens="dialog-history" data-focuses="id_state">
 //                                                    (curseur placé sur ce champ)
 
@@ -17,4 +19,10 @@ document.querySelectorAll('[data-opens]').forEach(button => {
     });
 });
 
-document.querySelectorAll('dialog[data-open-on-load]').forEach(dialog => dialog.showModal());
+document.querySelectorAll('dialog[data-open-on-load]').forEach(dialog => {
+    dialog.showModal();
+
+    if (dialog.dataset.focus) {
+        document.getElementById(dialog.dataset.focus).focus();
+    }
+});

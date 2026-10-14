@@ -139,6 +139,16 @@
 
                 <dt>Substrat</dt>
                 <dd>{{ plant.substrate|default_if_none:"—" }}</dd>
+
+                <dt>Équipement</dt>
+                <dd>
+                    {# Cumul de l'équipement de l'emplacement et de celui de la plante #}
+                    {% for label, source in plant.equipment %}
+                        <span class="chip" title="Fourni par : {{ source }}">{{ label }} <span class="quiet">({{ source }})</span></span>
+                    {% empty %}
+                        —
+                    {% endfor %}
+                </dd>
             </dl>
         </section>
 
@@ -160,6 +170,57 @@
         </section>
 
     </div>
+
+
+    {# Parasites : statut déduit du journal, seule une inspection « Absence » clôt un épisode #}
+    {% with episode=plant.pest_episode %}
+    <section class="section panel pests{% if episode %}{% if episode.confirmed %} pests--confirmed{% else %} pests--suspicion{% endif %}{% endif %}">
+        <div class="section__head">
+            <h2>Parasites</h2>
+            <div class="row">
+                {% if episode %}
+                    <a class="btn btn--small" href="?action=TREAT_PESTS#journal">Noter un traitement</a>
+                {% endif %}
+                <a class="btn btn--small" href="?action=CHECK_PESTS#journal">Noter une inspection</a>
+            </div>
+        </div>
+
+        {% if episode %}
+            <dl class="legend">
+                <dt>Statut</dt>
+                <dd>
+                    <span class="chip {% if episode.confirmed %}chip--danger{% else %}chip--warn{% endif %}">{{ episode.result_label }}</span>
+                    <span class="quiet">depuis le {{ episode.since|date:"d/m/Y" }}, dernière inspection le {{ episode.latest.date|date:"d/m/Y" }}</span>
+                </dd>
+
+                <dt>Parasites</dt>
+                <dd>{{ episode.pests|default:"Non précisés" }}</dd>
+
+                <dt>Gravité</dt>
+                <dd>{{ episode.severity|default:"—" }}</dd>
+
+                <dt>Traitements</dt>
+                <dd>
+                    {% if episode.treatment_lines %}
+                        <ul class="pests__treatments">
+                            {% for entry, treatment, dose in episode.treatment_lines %}
+                                <li>
+                                    <time datetime="{{ entry.date|date:'c' }}">{{ entry.date|date:"d/m/Y" }}</time>
+                                    {{ treatment }}{% if dose %}, {{ dose }}{% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <span class="quiet">Aucun traitement noté depuis le constat.</span>
+                    {% endif %}
+                </dd>
+            </dl>
+            <p class="quiet">Seule une inspection concluant à l'absence de parasites refermera cet épisode.</p>
+        {% else %}
+            <p class="quiet">Aucun parasite constaté. Une inspection notant une suspicion ou une présence ouvrira un épisode ici, qu'une inspection « Absence » refermera.</p>
+        {% endif %}
+    </section>
+    {% endwith %}
 
 
     <section class="section" id="journal">
@@ -270,7 +331,7 @@
 
 
     {# Formulaire du journal : dans une boîte, rouverte d'office si le POST a échoué #}
-    <dialog class="dialog--wide" id="dialog-history"{% if history_form.errors %} data-open-on-load{% endif %}>
+    <dialog class="dialog--wide" id="dialog-history"{% if open_journal %} data-open-on-load{% endif %}{% if history_form.initial.state %} data-focus="{{ history_form.comment.auto_id }}"{% endif %}>
         <div class="dialog__head">
             <h2>Noter dans le journal</h2>
             <span class="quiet">{{ plant }}</span>
@@ -291,6 +352,7 @@
 {% block scripts %}
     <script src="{% static 'Plantes/js/open_dialog.js' %}"></script>
     <script src="{% static 'Plantes/js/care_detail.js' %}"></script>
+    <script src="{% static 'Plantes/js/tags_input.js' %}"></script>
     <script src="{% static 'Plantes/js/lightbox.js' %}"></script>
     <script src="{% static 'Plantes/js/context_menu.js' %}"></script>
 {% endblock %}

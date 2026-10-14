@@ -32,6 +32,7 @@ ACTIONS = [
     {'code': 'MOVE', 'name': 'Déplacement', 'description': "Changer la plante d'emplacement."},
     {'code': 'CLEAN_LEAVES', 'name': 'Nettoyage du feuillage', 'description': 'Dépoussiérer les feuilles pour préserver la photosynthèse.'},
     {'code': 'CHECK_PESTS', 'name': 'Inspection parasites', 'description': 'Vérifier la présence de nuisibles ou de maladies.'},
+    {'code': 'TREAT_PESTS', 'name': 'Traitement parasites', 'description': 'Appliquer un traitement contre les parasites constatés.'},
     {'code': 'ROTATE', 'name': 'Rotation', 'description': 'Tourner le pot pour équilibrer la croissance vers la lumière.'},
     {'code': 'PROPAGATE', 'name': 'Bouturage', 'description': 'Prélever une bouture pour multiplier la plante.'},
 ]

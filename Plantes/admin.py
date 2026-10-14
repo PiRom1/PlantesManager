@@ -197,7 +197,10 @@ class PlantAdmin(admin.ModelAdmin):
         'acquisition_date',
         'creation_date',
     )
-    list_filter = ('user', 'specie', 'state', 'spot', 'substrate', 'acquisition_date')
+    list_filter = (
+        'user', 'specie', 'state', 'spot', 'substrate', 'acquisition_date',
+        'has_additional_light', 'has_heater', 'has_moister',
+    )
     search_fields = (
         'surname',
         'cultivar',

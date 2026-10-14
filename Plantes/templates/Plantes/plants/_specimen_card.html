@@ -23,6 +23,13 @@
     </span>
     <span class="specimen__meta">
         {% if plant.state %}<span class="chip">{{ plant.state }}</span>{% endif %}
+        {% if plant.pest_episode %}
+            {% if plant.pest_episode.confirmed %}
+                <span class="chip chip--danger">Parasites</span>
+            {% else %}
+                <span class="chip chip--warn">Parasites ?</span>
+            {% endif %}
+        {% endif %}
         {% if plant.pot %}<span>{{ plant.pot }}</span>{% endif %}
         {% if plant.substrate %}<span>{{ plant.substrate }}</span>{% endif %}
     </span>

@@ -61,6 +61,14 @@
         </div>
 
         {% include "includes/_field.html" with field=form.substrate %}
+
+        {# Équipement propre à la plante : il s'ajoute à celui de l'emplacement #}
+        <div class="form__row">
+            {% include "includes/_field.html" with field=form.has_additional_light %}
+            {% include "includes/_field.html" with field=form.has_heater %}
+            {% include "includes/_field.html" with field=form.has_moister %}
+        </div>
+        <span class="field__help">Équipement propre à cette plante, en plus de celui de son emplacement.</span>
     </div>
 
     <div class="form__group">

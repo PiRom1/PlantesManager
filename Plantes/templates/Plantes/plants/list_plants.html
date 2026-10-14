@@ -8,10 +8,20 @@
         <div>
             <h1 class="page-head__title">Mes plantes</h1>
             <p class="page-head__sub">
-                {{ all_plants|length }} plante{{ all_plants|length|pluralize }} dans ta collection
+                {% if pests_only %}
+                    {{ infested_count }} plante{{ infested_count|pluralize }} parasitée{{ infested_count|pluralize }} sur {{ total }}
+                {% else %}
+                    {{ total }} plante{{ total|pluralize }} dans ta collection
+                {% endif %}
             </p>
         </div>
         <div class="page-head__actions">
+            {# Filtre « parasitées » : le statut est déduit du journal de chaque plante #}
+            {% if pests_only %}
+                <a class="btn btn--danger" href="{% url 'list_plants' %}">Parasitées ({{ infested_count }}) ✕</a>
+            {% else %}
+                <a class="btn{% if infested_count %} btn--danger{% endif %}" href="?filter=pests">Parasitées ({{ infested_count }})</a>
+            {% endif %}
             <a class="btn btn--primary" href="{% url 'add_plant' %}">Ajouter une plante</a>
         </div>
     </header>
@@ -22,6 +32,13 @@
                 <li>{% include "Plantes/plants/_specimen_card.html" with plant=plant %}</li>
             {% endfor %}
         </ul>
+
+    {% elif pests_only %}
+        <div class="empty">
+            {% include "includes/_icon_leaf.html" %}
+            <p>Aucune plante parasitée : aucune inspection n'a constaté de suspicion ou de présence sans qu'une inspection « Absence » ne suive.</p>
+            <a class="btn" href="{% url 'list_plants' %}">Voir toutes les plantes</a>
+        </div>
 
     {% else %}
         <div class="empty">
