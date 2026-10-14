@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from Plantes.forms import PlantForm, PlantHistoryForm, PlantImageForm, PotForm, SpotForm
+from Plantes.forms import PlantForm, PlantHistoryForm, PlantImageForm, PotForm, PropagationForm, SpotForm
 from Plantes.models import Action, DetailFieldType, Plant, PlantHistory, PlantState, Pot, Specie, Spot
 
 
@@ -36,6 +36,15 @@ def selected_specie(form):
     return Specie.objects.filter(id=specie_id).first()
 
 
+def acquisition_datetime(plant):
+    """Date d'acquisition de la plante pour le journal, ou maintenant si elle est inconnue."""
+
+    if plant.acquisition_date:
+        return timezone.make_aware(datetime.combine(plant.acquisition_date, time.min))
+
+    return timezone.now()
+
+
 def log_arrival(plant):
     """
     Première entrée du journal, qui porte l'état choisi à la création : le
@@ -43,13 +52,25 @@ def log_arrival(plant):
     Datée de l'acquisition si elle est connue.
     """
 
-    if plant.acquisition_date:
-        date = timezone.make_aware(datetime.combine(plant.acquisition_date, time.min))
-    else:
-        date = timezone.now()
-
-    PlantHistory.objects.create(plant=plant, state=plant.state, date=date,
+    PlantHistory.objects.create(plant=plant, state=plant.state, date=acquisition_datetime(plant),
                                 comment='Arrivée dans la collection')
+
+
+def log_propagation(mother, cutting, propagation):
+    """
+    Entrée « Bouturage » dans le journal de la plante mère, à la date d'arrivée
+    de la bouture, avec les détails saisis (méthode, milieu, hormone).
+    """
+
+    detail = {'n_cuttings': 1, 'hormone': propagation['hormone']}
+
+    for name in ('method', 'medium'):
+        if propagation[name]:
+            detail[name] = propagation[name]
+
+    PlantHistory.objects.create(plant=mother, action=Action.objects.get(code='PROPAGATE'),
+                                date=acquisition_datetime(cutting), detail=detail,
+                                comment=f'Bouture : {cutting}')
 
 
 
@@ -102,6 +123,56 @@ def add_plant(request):
 
     context = {'form' : form, 'selected_specie' : selected_specie(form),
                'spot_form' : SpotForm(), 'pot_form' : PotForm()}
+
+    return render(request, url, context)
+
+
+
+@login_required
+def add_cutting(request, id_plant: int):
+    """
+    Déclaration d'une bouture depuis la fiche de la plante mère : le même
+    formulaire que l'ajout, prérempli (espèce, cultivar, mère, état « Bouture »,
+    date du jour, origine), plus les détails du bouturage. L'enregistrement
+    crée la bouture et note le bouturage dans le journal de la mère.
+    """
+
+    url = 'Plantes/plants/add_plant.html'
+
+    mother = get_object_or_404(Plant, id = id_plant, user = request.user)
+
+    if request.method == 'POST':
+        form = PlantForm(request.POST, request.FILES)
+        restrict_to_user(form, request.user)
+        propagation_form = PropagationForm(request.POST)
+
+        if form.is_valid() and propagation_form.is_valid():
+            plant = form.save(commit=False)
+            plant.user = request.user
+            plant.save()
+
+            if plant.state:
+                log_arrival(plant)
+
+            log_propagation(mother, plant, propagation_form.cleaned_data)
+
+            return redirect('detail_plant', id_plant=plant.id)
+
+    else:
+        initial = {
+            'specie' : mother.specie_id,
+            'cultivar' : mother.cultivar,
+            'father' : mother,
+            'state' : PlantState.objects.filter(code='CUTTING').first(),
+            'acquisition_date' : timezone.localdate(),
+            'origin' : f'Bouture de {mother}'[:50],
+        }
+        form = PlantForm(initial=initial)
+        restrict_to_user(form, request.user)
+        propagation_form = PropagationForm()
+
+    context = {'form' : form, 'selected_specie' : selected_specie(form), 'mother' : mother,
+               'propagation_form' : propagation_form, 'spot_form' : SpotForm(), 'pot_form' : PotForm()}
 
     return render(request, url, context)
 

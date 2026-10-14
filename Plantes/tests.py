@@ -252,3 +252,67 @@ class PlantPagesTests(TestCase):
         response = self.client.get(reverse('list_plants') + '?filter=pests')
         self.assertContains(response, 'Momo')
         self.assertNotContains(response, 'Saine')
+
+
+class CuttingTests(TestCase):
+
+    def setUp(self):
+        self.user = make_user()
+        self.client.force_login(self.user)
+        self.propagate = Action.objects.create(code='PROPAGATE', name='Bouturage', description='')
+        self.cutting_state = PlantState.objects.create(code='CUTTING', name='Bouture', description='')
+        self.specie = Specie.objects.create(vernacular_name='Monstera', scientific_name='Monstera deliciosa')
+        self.mother = Plant.objects.create(user=self.user, specie=self.specie, cultivar='Variegata', surname='Maman')
+
+    def test_formulaire_prerempli_depuis_la_mere(self):
+        response = self.client.get(reverse('add_cutting', args=[self.mother.id]))
+
+        self.assertContains(response, 'Déclarer une bouture')
+        self.assertContains(response, f'<input type="hidden" name="specie" value="{self.specie.id}"', html=False)
+        self.assertContains(response, 'value="Variegata"')
+        self.assertContains(response, f'<option value="{self.mother.id}" selected>Maman</option>', html=False)
+        self.assertContains(response, f'<option value="{self.cutting_state.id}" selected>Bouture</option>', html=False)
+        self.assertContains(response, 'value="Bouture de Maman"')
+        self.assertContains(response, 'name="method"')
+        # Date du jour au format ISO, le seul que le champ date du navigateur accepte
+        self.assertContains(response, f'name="acquisition_date" value="{timezone.localdate():%Y-%m-%d}"')
+
+    def test_declarer_une_bouture_cree_la_plante_et_l_entree_chez_la_mere(self):
+        response = self.client.post(reverse('add_cutting', args=[self.mother.id]), {
+            'specie': self.specie.id,
+            'cultivar': 'Variegata',
+            'surname': 'Bébé',
+            'state': self.cutting_state.id,
+            'father': self.mother.id,
+            'acquisition_date': '2026-10-14',
+            'origin': 'Bouture de Maman',
+            'method': 'STEM_CUTTING',
+            'medium': 'WATER',
+            'hormone': 'on',
+        })
+
+        cutting = Plant.objects.get(surname='Bébé')
+        self.assertRedirects(response, reverse('detail_plant', args=[cutting.id]))
+        self.assertEqual(cutting.father, self.mother)
+        self.assertEqual(cutting.state, self.cutting_state)
+
+        # Arrivée chez la bouture, bouturage chez la mère, à la même date
+        arrival = PlantHistory.objects.get(plant=cutting)
+        propagation = PlantHistory.objects.get(plant=self.mother)
+        self.assertEqual(propagation.action, self.propagate)
+        self.assertEqual(propagation.detail, {'n_cuttings': 1, 'hormone': True, 'method': 'STEM_CUTTING', 'medium': 'WATER'})
+        self.assertEqual(propagation.comment, 'Bouture : Bébé')
+        self.assertEqual(propagation.date, arrival.date)
+
+    def test_bouturage_sans_detail(self):
+        self.client.post(reverse('add_cutting', args=[self.mother.id]), {
+            'specie': self.specie.id, 'father': self.mother.id,
+        })
+
+        propagation = PlantHistory.objects.get(plant=self.mother)
+        self.assertEqual(propagation.detail, {'n_cuttings': 1, 'hormone': False})
+
+    def test_la_mere_doit_etre_a_moi(self):
+        other = Plant.objects.create(user=make_user('autre'))
+
+        self.assertEqual(self.client.get(reverse('add_cutting', args=[other.id])).status_code, 404)

@@ -24,6 +24,7 @@
         </div>
         <div class="page-head__actions">
             <a class="btn" href="{% url 'edit_plant' plant.id %}">Modifier la fiche</a>
+            <a class="btn" href="{% url 'add_cutting' plant.id %}">Déclarer une bouture</a>
             <button class="btn btn--primary" type="button" data-opens="dialog-history">Noter dans le journal</button>
         </div>
     </header>
@@ -306,7 +307,7 @@
                     {% if child.state %}<span class="chip">{{ child.state }}</span>{% endif %}
                 </li>
             {% empty %}
-                <li class="linklist__empty">Aucune bouture. Pour en déclarer une, ajoute une plante en indiquant celle-ci comme plante mère.</li>
+                <li class="linklist__empty">Aucune bouture. <a href="{% url 'add_cutting' plant.id %}">Déclarer une bouture</a> issue de cette plante.</li>
             {% endfor %}
         </ul>
     </section>

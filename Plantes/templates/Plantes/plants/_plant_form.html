@@ -81,6 +81,20 @@
         </div>
     </div>
 
+    {# Bouture déclarée depuis la plante mère : détails du bouturage, pour son journal #}
+    {% if propagation_form %}
+        <div class="form__group">
+            <span class="form__group-title">Bouturage</span>
+            <span class="field__help">Noté dans le journal de {{ mother }}. Tout est optionnel.</span>
+
+            <div class="form__row">
+                {% include "includes/_field.html" with field=propagation_form.method %}
+                {% include "includes/_field.html" with field=propagation_form.medium %}
+                {% include "includes/_field.html" with field=propagation_form.hormone %}
+            </div>
+        </div>
+    {% endif %}
+
     <div class="form__actions">
         <button class="btn btn--primary" type="submit">{{ submit_label }}</button>
         <a class="btn btn--ghost" href="{{ cancel_url }}">Annuler</a>

@@ -18,6 +18,7 @@ urlpatterns = [
     path('plant/add/', plant_views.add_plant, name='add_plant'),
     path('plant/<int:id_plant>/', plant_views.detail_plant, name='detail_plant'),
     path('plant/<int:id_plant>/edit/', plant_views.edit_plant, name='edit_plant'),
+    path('plant/<int:id_plant>/cutting/', plant_views.add_cutting, name='add_cutting'),
     path('plant/<int:id_plant>/image/', plant_views.change_plant_image, name='change_plant_image'),
     path('plant/<int:id_plant>/history/<int:id_entry>/edit/', plant_views.edit_history, name='edit_history'),
     path('plant/<int:id_plant>/history/<int:id_entry>/delete/', plant_views.delete_history, name='delete_history'),

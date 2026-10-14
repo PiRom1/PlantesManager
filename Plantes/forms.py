@@ -2,7 +2,7 @@
 
 from django import forms
 
-from Plantes.models import Plant, PlantHistory, Pot, Spot
+from Plantes.models import Plant, PlantHistory, Pot, PropagationMedium, PropagationMethod, Spot
 
 
 class PlantForm(forms.ModelForm):
@@ -36,7 +36,9 @@ class PlantForm(forms.ModelForm):
         widgets = {
             'specie': forms.HiddenInput(),
             'cultivar': forms.TextInput(attrs={'placeholder': 'Variegata, ...'}),
-            'acquisition_date': forms.DateInput(attrs={'type': 'date'}),
+            # Format ISO imposé : avec la locale fr, le navigateur refuserait « 14/10/2026 »
+            # et afficherait un champ vide, même pour une date existante
+            'acquisition_date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
         }
         labels = {
             'specie': 'Espèce',
@@ -192,3 +194,17 @@ class PlantHistoryForm(forms.ModelForm):
                 'Entrée vide : indique au moins une action, un état, un commentaire, une photo ou une mesure.')
 
         return cleaned_data
+
+
+class PropagationForm(forms.Form):
+    """
+    Détails du bouturage, saisis en déclarant une bouture depuis la plante mère.
+    Tout est optionnel : ils alimentent l'entrée « Bouturage » du journal de la
+    mère, dont le schéma est Action.DETAIL_FIELDS['PROPAGATE'].
+    """
+
+    method = forms.ChoiceField(label='Méthode', required=False,
+                               choices=[('', '—')] + PropagationMethod.choices)
+    medium = forms.ChoiceField(label='Milieu', required=False,
+                               choices=[('', '—')] + PropagationMedium.choices)
+    hormone = forms.BooleanField(label='Hormone de bouturage', required=False)

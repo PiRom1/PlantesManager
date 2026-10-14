@@ -1,21 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}Ajouter une plante — PlantesManager{% endblock %}
+{% block title %}{% if mother %}Déclarer une bouture{% else %}Ajouter une plante{% endif %} — PlantesManager{% endblock %}
 
 {% block content %}
 
+    {# Même page pour l'ajout et pour une bouture déclarée depuis la plante mère #}
     <header class="page-head">
         <div>
-            {% url 'list_plants' as back_url %}
-            {% include "includes/_back.html" with url=back_url label="Mes plantes" %}
-            <h1 class="page-head__title">Ajouter une plante</h1>
-            <p class="page-head__sub">Seule l'espèce compte au départ, le reste peut attendre.</p>
+            {% if mother %}
+                {% url 'detail_plant' mother.id as back_url %}
+                {% include "includes/_back.html" with url=back_url label=mother %}
+                <h1 class="page-head__title">Déclarer une bouture</h1>
+                <p class="page-head__sub">Issue de {{ mother }}. Le bouturage sera noté dans son journal.</p>
+            {% else %}
+                {% url 'list_plants' as back_url %}
+                {% include "includes/_back.html" with url=back_url label="Mes plantes" %}
+                <h1 class="page-head__title">Ajouter une plante</h1>
+                <p class="page-head__sub">Seule l'espèce compte au départ, le reste peut attendre.</p>
+            {% endif %}
         </div>
     </header>
 
     <div class="panel">
-        {% url 'list_plants' as cancel_url %}
-        {% include "Plantes/plants/_plant_form.html" with submit_label="Ajouter à ma collection" cancel_url=cancel_url %}
+        {% if mother %}
+            {% include "Plantes/plants/_plant_form.html" with submit_label="Déclarer la bouture" cancel_url=back_url %}
+        {% else %}
+            {% include "Plantes/plants/_plant_form.html" with submit_label="Ajouter à ma collection" cancel_url=back_url %}
+        {% endif %}
     </div>
 
 {% endblock %}
