@@ -606,6 +606,12 @@ h3 {
 
 /* Fond plein à la couleur du statut, insecte sombre dessus, puis un halo
    de plusieurs pixels pour que la couleur se lise de loin */
+/* L'insecte respire dans son rond : 14 px dans un cercle de 30 */
+.specimen__pest svg {
+    width: 14px;
+    height: 14px;
+}
+
 .specimen__pest--suspicion {
     --icon-bug-back: var(--ochre);
     color: var(--leaf-ink);
