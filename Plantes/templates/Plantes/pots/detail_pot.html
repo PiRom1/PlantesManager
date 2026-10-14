@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}{{ pot.denomination }} — PlantesManager{% endblock %}
 
@@ -13,7 +14,32 @@
                 {{ pot.material|default_if_none:"Matériau non renseigné" }}{% if pot.volume_litre %}, {{ pot.volume_litre }} L{% endif %}
             </p>
         </div>
+        <div class="page-head__actions">
+            <button class="btn btn--danger" type="button" data-opens="dialog-delete">Supprimer</button>
+        </div>
     </header>
+
+    <dialog id="dialog-delete">
+        <div class="dialog__head">
+            <h2>Supprimer ce pot ?</h2>
+        </div>
+
+        {% with count=pot.plant_set.count %}
+            {% if count %}
+                <p class="notice notice--error">{{ count }} plante{{ count|pluralize }} y {% if count == 1 %}est{% else %}sont{% endif %} installée{{ count|pluralize }} : elle{{ count|pluralize }} rester{{ count|pluralize:"a,ont" }} dans ta collection, sans pot.</p>
+            {% else %}
+                <p class="quiet">Aucune plante n'y est installée.</p>
+            {% endif %}
+        {% endwith %}
+
+        <form method="post" action="{% url 'delete_pot' pot.id %}">
+            {% csrf_token %}
+            <div class="dialog__actions">
+                <button class="btn btn--ghost" type="button" onclick="this.closest('dialog').close()">Annuler</button>
+                <button class="btn btn--danger" type="submit">Supprimer définitivement</button>
+            </div>
+        </form>
+    </dialog>
 
     <section class="section panel">
         <div class="section__head">
@@ -49,4 +75,8 @@
         {% endif %}
     </section>
 
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'Plantes/js/open_dialog.js' %}"></script>
 {% endblock %}

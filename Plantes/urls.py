@@ -19,6 +19,7 @@ urlpatterns = [
     path('plant/<int:id_plant>/', plant_views.detail_plant, name='detail_plant'),
     path('plant/<int:id_plant>/edit/', plant_views.edit_plant, name='edit_plant'),
     path('plant/<int:id_plant>/cutting/', plant_views.add_cutting, name='add_cutting'),
+    path('plant/<int:id_plant>/delete/', plant_views.delete_plant, name='delete_plant'),
     path('plant/<int:id_plant>/image/', plant_views.change_plant_image, name='change_plant_image'),
     path('plant/<int:id_plant>/history/<int:id_entry>/edit/', plant_views.edit_history, name='edit_history'),
     path('plant/<int:id_plant>/history/<int:id_entry>/delete/', plant_views.delete_history, name='delete_history'),
@@ -27,11 +28,13 @@ urlpatterns = [
     path('spots/', spot_views.list_spots, name='list_spots'),
     path('spot/add/', spot_views.add_spot, name='add_spot'),
     path('spot/<int:id_spot>/', spot_views.detail_spot, name='detail_spot'),
+    path('spot/<int:id_spot>/delete/', spot_views.delete_spot, name='delete_spot'),
 
     # Pots
     path('pots/', pot_views.list_pots, name='list_pots'),
     path('pot/add/', pot_views.add_pot, name='add_pot'),
     path('pot/<int:id_pot>/', pot_views.detail_pot, name='detail_pot'),
+    path('pot/<int:id_pot>/delete/', pot_views.delete_pot, name='delete_pot'),
 
     # Médias (photos), servis uniquement aux utilisateurs connectés
     path('media/<path:path>', media_views.serve_media, name='serve_media'),

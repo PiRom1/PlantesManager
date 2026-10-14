@@ -25,9 +25,35 @@
         <div class="page-head__actions">
             <a class="btn" href="{% url 'edit_plant' plant.id %}">Modifier la fiche</a>
             <a class="btn" href="{% url 'add_cutting' plant.id %}">Déclarer une bouture</a>
+            <button class="btn btn--danger" type="button" data-opens="dialog-delete">Supprimer</button>
             <button class="btn btn--primary" type="button" data-opens="dialog-history">Noter dans le journal</button>
         </div>
     </header>
+
+
+    {# Suppression : définitive, journal et photos compris. Une plante morte se déclare plutôt dans le journal #}
+    <dialog class="dialog--wide" id="dialog-delete">
+        <div class="dialog__head">
+            <h2>Supprimer {{ plant }} ?</h2>
+        </div>
+
+        <p class="notice notice--error">
+            La plante sera définitivement supprimée, avec ses {{ history|length }} entrée{{ history|length|pluralize }} de journal et ses photos.
+            {% with children=plant.children.count %}
+                {% if children == 1 %}Sa bouture restera dans ta collection, sans plante mère.{% elif children %}Ses {{ children }} boutures resteront dans ta collection, sans plante mère.{% endif %}
+            {% endwith %}
+        </p>
+        <p>Si elle est morte, mieux vaut le déclarer dans le journal : elle y garde toute son histoire.</p>
+
+        <form method="post" action="{% url 'delete_plant' plant.id %}">
+            {% csrf_token %}
+            <div class="dialog__actions">
+                <button class="btn btn--ghost" type="button" onclick="this.closest('dialog').close()">Annuler</button>
+                <a class="btn btn--primary" href="?state=DEAD">Déclarer morte</a>
+                <button class="btn btn--danger" type="submit">Supprimer définitivement</button>
+            </div>
+        </form>
+    </dialog>
 
 
     {# Carte d'identité : la planche et l'essentiel, côte à côte #}

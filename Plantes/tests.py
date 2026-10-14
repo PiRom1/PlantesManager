@@ -6,6 +6,7 @@ anciennes inspections par la migration, équipement cumulé.
     python manage.py test Plantes
 """
 
+import os
 from datetime import timedelta
 
 from django.http import QueryDict
@@ -13,7 +14,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from Plantes.models import Action, Plant, PlantHistory, PlantState, Specie, Spot, User
+from Plantes.models import Action, Plant, PlantHistory, PlantState, Pot, Specie, Spot, User
 from Plantes.views.plant_views import build_detail, clean_tags
 
 
@@ -316,3 +317,70 @@ class CuttingTests(TestCase):
         other = Plant.objects.create(user=make_user('autre'))
 
         self.assertEqual(self.client.get(reverse('add_cutting', args=[other.id])).status_code, 404)
+
+
+class DeleteTests(TestCase):
+
+    def setUp(self):
+        self.user = make_user()
+        self.client.force_login(self.user)
+        self.spot = Spot.objects.create(user=self.user, name='Salon')
+        self.pot = Pot.objects.create(user=self.user, denomination='Terre cuite 12')
+        self.plant = Plant.objects.create(user=self.user, surname='Momo', spot=self.spot, pot=self.pot)
+
+    def test_supprimer_un_emplacement_laisse_les_plantes_sans_emplacement(self):
+        response = self.client.get(reverse('detail_spot', args=[self.spot.id]))
+        self.assertContains(response, '1 plante y est rattachée : elle restera dans ta collection, sans emplacement.')
+
+        response = self.client.post(reverse('delete_spot', args=[self.spot.id]))
+
+        self.assertRedirects(response, reverse('list_spots'))
+        self.assertFalse(Spot.objects.filter(id=self.spot.id).exists())
+        self.plant.refresh_from_db()
+        self.assertIsNone(self.plant.spot)
+
+    def test_supprimer_un_pot_laisse_les_plantes_sans_pot(self):
+        Plant.objects.create(user=self.user, pot=self.pot)
+        response = self.client.get(reverse('detail_pot', args=[self.pot.id]))
+        self.assertContains(response, '2 plantes y sont installées : elles resteront dans ta collection, sans pot.')
+
+        response = self.client.post(reverse('delete_pot', args=[self.pot.id]))
+
+        self.assertRedirects(response, reverse('list_pots'))
+        self.plant.refresh_from_db()
+        self.assertIsNone(self.plant.pot)
+
+    def test_supprimer_une_plante_emporte_son_journal_et_ses_photos(self):
+        import tempfile
+        from django.test import override_settings
+
+        PlantHistory.objects.create(plant=self.plant, date=timezone.now(), comment='Arrivée')
+        cutting = Plant.objects.create(user=self.user, father=self.plant)
+
+        with tempfile.TemporaryDirectory() as media_root:
+            folder = os.path.join(media_root, 'PlantImages', str(self.plant.id))
+            os.makedirs(folder)
+            open(os.path.join(folder, 'photo.jpg'), 'w').close()
+
+            with override_settings(MEDIA_ROOT=media_root):
+                response = self.client.get(reverse('detail_plant', args=[self.plant.id]))
+                self.assertContains(response, 'Supprimer Momo ?')
+                self.assertContains(response, 'Sa bouture restera dans ta collection, sans plante mère.')
+                self.assertContains(response, 'href="?state=DEAD"')
+
+                response = self.client.post(reverse('delete_plant', args=[self.plant.id]))
+
+            self.assertRedirects(response, reverse('list_plants'))
+            self.assertFalse(Plant.objects.filter(id=self.plant.id).exists())
+            self.assertFalse(PlantHistory.objects.exists())
+            self.assertFalse(os.path.exists(folder))
+
+        cutting.refresh_from_db()
+        self.assertIsNone(cutting.father)
+
+    def test_suppression_en_post_seulement_et_chez_soi(self):
+        self.assertEqual(self.client.get(reverse('delete_plant', args=[self.plant.id])).status_code, 405)
+
+        other = Plant.objects.create(user=make_user('autre'))
+        self.assertEqual(self.client.post(reverse('delete_plant', args=[other.id])).status_code, 404)
+        self.assertTrue(Plant.objects.filter(id=other.id).exists())

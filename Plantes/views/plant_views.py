@@ -1,5 +1,8 @@
+import os
+import shutil
 from datetime import datetime, time
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -450,3 +453,22 @@ def delete_history(request, id_plant: int, id_entry: int):
     plant.refresh_state()
 
     return redirect(reverse('detail_plant', args=[plant.id]) + '#journal')
+
+
+
+@login_required
+@require_POST
+def delete_plant(request, id_plant: int):
+    """
+    Suppression définitive d'une plante : son journal part avec elle (cascade),
+    ses photos sur le disque aussi. Ses boutures restent, sans plante mère.
+    Pour une plante morte, la boîte de confirmation propose plutôt de le
+    déclarer dans le journal.
+    """
+
+    plant = get_object_or_404(Plant, id = id_plant, user = request.user)
+
+    plant.delete()
+    shutil.rmtree(os.path.join(settings.MEDIA_ROOT, 'PlantImages', str(id_plant)), ignore_errors=True)
+
+    return redirect('list_plants')

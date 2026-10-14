@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from Plantes.forms import PotForm
 from Plantes.models import Pot
@@ -84,3 +85,16 @@ def detail_pot(request, id_pot: int):
     context = {'form' : form, 'pot' : pot}
 
     return render(request, url, context)
+
+
+
+@login_required
+@require_POST
+def delete_pot(request, id_pot: int):
+    """Suppression d'un pot : ses plantes restent, sans pot (SET_NULL)."""
+
+    pot = get_object_or_404(Pot, id = id_pot, user = request.user)
+
+    pot.delete()
+
+    return redirect('list_pots')

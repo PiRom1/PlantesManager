@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
 
 from Plantes.forms import SpotForm
 from Plantes.models import Spot
@@ -87,3 +88,16 @@ def detail_spot(request, id_spot: int):
     context = {'form' : form, 'spot' : spot}
 
     return render(request, url, context)
+
+
+
+@login_required
+@require_POST
+def delete_spot(request, id_spot: int):
+    """Suppression d'un emplacement : ses plantes restent, sans emplacement (SET_NULL)."""
+
+    spot = get_object_or_404(Spot, id = id_spot, user = request.user)
+
+    spot.delete()
+
+    return redirect('list_spots')
