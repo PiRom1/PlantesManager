@@ -199,6 +199,11 @@ def build_detail(action, posted):
     for field in action.detail_fields:
         key = f'detail_{action.code}_{field.name}'
 
+        # Champ conditionnel masqué dans le formulaire : ce qu'il contient ne compte pas
+        # (les champs sont lus dans l'ordre du schéma, le champ pilote vient avant)
+        if not field.is_shown(detail):
+            continue
+
         if field.type == DetailFieldType.BOOLEAN:
             detail[field.name] = key in posted
             continue

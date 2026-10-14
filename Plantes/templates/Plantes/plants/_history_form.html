@@ -18,7 +18,9 @@
 
         <div class="form__row">
             {% for field, input_id, current in fields %}
-                <div class="field{% if field.type == 'boolean' %} field--check{% endif %}">
+                {# Champ conditionnel : care_detail.js ne le montre que pour certaines valeurs du champ pilote #}
+                <div class="field{% if field.type == 'boolean' %} field--check{% endif %}"
+                     {% if field.shown_when %}data-shown-when="detail_{{ action.code }}_{{ field.shown_when.0 }}" data-shown-values="{{ field.shown_when.1|join:' ' }}"{% endif %}>
                     <label class="field__label" for="{{ input_id }}">{{ field.label }}</label>
 
                     {% if field.type == 'select' %}

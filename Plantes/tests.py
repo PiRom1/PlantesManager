@@ -125,6 +125,20 @@ class TagsFieldTests(TestCase):
 
         self.assertEqual(build_detail(self.check, posted), {'result': 'CLEAR'})
 
+    def test_absence_ignore_parasites_et_gravite(self):
+        # Champs masqués dans le formulaire : même postés, ils ne comptent pas
+        posted = QueryDict('detail_CHECK_PESTS_result=CLEAR&detail_CHECK_PESTS_pests=THRIPS&detail_CHECK_PESTS_severity=SEVERE')
+
+        self.assertEqual(build_detail(self.check, posted), {'result': 'CLEAR'})
+
+    def test_les_champs_conditionnels_portent_leur_condition_dans_le_formulaire(self):
+        self.client.force_login(make_user())
+        plant = Plant.objects.create(user=User.objects.get())
+
+        response = self.client.get(reverse('detail_plant', args=[plant.id]))
+
+        self.assertContains(response, 'data-shown-when="detail_CHECK_PESTS_result" data-shown-values="SUSPICION CONFIRMED"', count=2)
+
     def test_resume_du_journal_traduit_les_codes(self):
         plant = Plant.objects.create(user=make_user())
         entry = PlantHistory.objects.create(plant=plant, action=self.check, date=timezone.now(),
@@ -248,7 +262,8 @@ class PlantPagesTests(TestCase):
         response = self.client.get(reverse('list_plants'))
         self.assertContains(response, 'Parasitées (1)')
         self.assertContains(response, 'Saine')
-        self.assertContains(response, 'Parasites ?')
+        self.assertContains(response, 'specimen__pest--suspicion" title="Parasite suspecté"')
+        self.assertNotContains(response, 'specimen__pest--confirmed')
 
         response = self.client.get(reverse('list_plants') + '?filter=pests')
         self.assertContains(response, 'Momo')

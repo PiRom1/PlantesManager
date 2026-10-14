@@ -210,6 +210,9 @@ class DetailField:
     label: str
     type: str
     choices: tuple = ()
+    # Champ conditionnel : (nom d'un champ select de la même action, valeurs qui
+    # l'affichent). Masqué dans le formulaire et ignoré au POST sinon.
+    shown_when: tuple = ()
 
     def __post_init__(self):
         if self.type not in DetailFieldType.values:
@@ -220,6 +223,19 @@ class DetailField:
 
         if self.type not in (DetailFieldType.SELECT, DetailFieldType.TAGS) and self.choices:
             raise ValueError(f"{self.name} : seuls les champs select et tags acceptent des choix")
+
+        if self.shown_when and (len(self.shown_when) != 2 or not self.shown_when[1]):
+            raise ValueError(f'{self.name} : shown_when attend (champ, (valeurs...))')
+
+    def is_shown(self, detail):
+        """Le champ a-t-il lieu d'être, vu les autres valeurs saisies ?"""
+
+        if not self.shown_when:
+            return True
+
+        field, values = self.shown_when
+
+        return detail.get(field) in values
 
     def display(self, value):
         """Valeur stockée dans le JSON rendue lisible : libellés à la place des codes."""
@@ -305,8 +321,10 @@ class Action(models.Model):
         # « Absence » met fin à un épisode parasitaire (voir Plant.pest_episode)
         'CHECK_PESTS': [
             DetailField('result', 'Résultat', DetailFieldType.SELECT, PestCheckResult.choices),
-            DetailField('pests', 'Parasites', DetailFieldType.TAGS, Pest.choices),
-            DetailField('severity', 'Gravité', DetailFieldType.SELECT, PestSeverity.choices),
+            DetailField('pests', 'Parasites', DetailFieldType.TAGS, Pest.choices,
+                        shown_when=('result', (PestCheckResult.SUSPICION, PestCheckResult.CONFIRMED))),
+            DetailField('severity', 'Gravité', DetailFieldType.SELECT, PestSeverity.choices,
+                        shown_when=('result', (PestCheckResult.SUSPICION, PestCheckResult.CONFIRMED))),
         ],
 
         'TREAT_PESTS': [

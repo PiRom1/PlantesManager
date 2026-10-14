@@ -4,6 +4,14 @@
         {% if plant.spot %}
             <span class="specimen__tag">{{ plant.spot }}</span>
         {% endif %}
+        {# Parasites : puce sur la planche, statut déduit du journal #}
+        {% if plant.pest_episode %}
+            {% if plant.pest_episode.confirmed %}
+                <span class="specimen__pest specimen__pest--confirmed" title="Parasite avéré" aria-label="Parasite avéré">🐛</span>
+            {% else %}
+                <span class="specimen__pest specimen__pest--suspicion" title="Parasite suspecté" aria-label="Parasite suspecté">🐛</span>
+            {% endif %}
+        {% endif %}
         {% if plant.image %}
             <img src="{{ plant.image.url }}" alt="{{ plant }}" loading="lazy">
         {% elif plant.specie.image %}
@@ -23,13 +31,6 @@
     </span>
     <span class="specimen__meta">
         {% if plant.state %}<span class="chip">{{ plant.state }}</span>{% endif %}
-        {% if plant.pest_episode %}
-            {% if plant.pest_episode.confirmed %}
-                <span class="chip chip--danger">Parasites</span>
-            {% else %}
-                <span class="chip chip--warn">Parasites ?</span>
-            {% endif %}
-        {% endif %}
         {% if plant.pot %}<span>{{ plant.pot }}</span>{% endif %}
         {% if plant.substrate %}<span>{{ plant.substrate }}</span>{% endif %}
     </span>
