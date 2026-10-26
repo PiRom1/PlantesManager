@@ -10,8 +10,10 @@
             {% url 'list_spots' as back_url %}
             {% include "includes/_back.html" with url=back_url label="Emplacements" %}
             <h1 class="page-head__title">{{ spot.name }}</h1>
-            {% if spot.description %}
-                <p class="page-head__sub">{{ spot.description }}</p>
+            {% if spot.room or spot.description %}
+                <p class="page-head__sub">
+                    {% if spot.room %}<a href="{% url 'detail_room' spot.room.id %}">{{ spot.room }}</a>{% endif %}{% if spot.room and spot.description %} · {% endif %}{{ spot.description|default_if_none:"" }}
+                </p>
             {% endif %}
         </div>
         <div class="page-head__actions">
@@ -75,8 +77,11 @@
         {% endif %}
     </section>
 
+    {% include "Plantes/spots/_room_dialog.html" %}
+
 {% endblock %}
 
 {% block scripts %}
     <script src="{% static 'Plantes/js/open_dialog.js' %}"></script>
+    <script src="{% static 'Plantes/js/quick_add.js' %}"></script>
 {% endblock %}

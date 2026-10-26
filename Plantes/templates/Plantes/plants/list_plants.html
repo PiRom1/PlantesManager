@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Mes plantes — PlantesManager{% endblock %}
 
@@ -10,21 +11,71 @@
             <p class="page-head__sub">
                 {% if pests_only %}
                     {{ infested_count }} plante{{ infested_count|pluralize }} parasitée{{ infested_count|pluralize }} sur {{ total }}
+                {% elif filtered %}
+                    {{ total }} plante{{ total|pluralize }} sur {{ collection_total }}
                 {% else %}
                     {{ total }} plante{{ total|pluralize }} dans ta collection
                 {% endif %}
             </p>
         </div>
         <div class="page-head__actions">
-            {# Filtre « parasitées » : le statut est déduit du journal de chaque plante #}
+            {# Filtre « parasitées » : le statut est déduit du journal de chaque plante. Les autres filtres sont conservés #}
             {% if pests_only %}
-                <a class="btn btn--danger" href="{% url 'list_plants' %}">Parasitées ({{ infested_count }}) ✕</a>
+                <a class="btn btn--danger" href="{% querystring filter=None %}">Parasitées ({{ infested_count }}) ✕</a>
             {% else %}
-                <a class="btn{% if infested_count %} btn--danger{% endif %}" href="?filter=pests">Parasitées ({{ infested_count }})</a>
+                <a class="btn{% if infested_count %} btn--danger{% endif %}" href="{% querystring filter='pests' %}">Parasitées ({{ infested_count }})</a>
             {% endif %}
             <a class="btn btn--primary" href="{% url 'add_plant' %}">Ajouter une plante</a>
         </div>
     </header>
+
+    {# Filtres et tri : les menus envoient le formulaire tout seuls (filters.js), le texte au clavier #}
+    {% if collection_total %}
+        <form class="filters" method="get" data-auto-submit>
+            {% if pests_only %}<input type="hidden" name="filter" value="pests">{% endif %}
+
+            <label class="field filters__search">
+                <span class="field__label">Recherche</span>
+                <input type="search" name="q" value="{{ query }}" placeholder="Surnom, espèce, cultivar..." autocomplete="off">
+            </label>
+
+            <label class="field">
+                <span class="field__label">Pièce</span>
+                <select name="room">
+                    <option value="">Toutes</option>
+                    {% for room in rooms %}
+                        <option value="{{ room.id }}"{% if room.id == room_id %} selected{% endif %}>{{ room.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label class="field">
+                <span class="field__label">Emplacement</span>
+                <select name="spot">
+                    <option value="">Tous</option>
+                    {% for spot in spots %}
+                        <option value="{{ spot.id }}"{% if spot.id == spot_id %} selected{% endif %}>{% if spot.room and not room_id %}{{ spot.room }} · {% endif %}{{ spot.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <label class="field">
+                <span class="field__label">Trier par</span>
+                <select name="sort">
+                    {% for code, label in sorts %}
+                        <option value="{{ code }}"{% if code == sort %} selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+
+            <div class="filters__actions">
+                <button class="btn" type="submit">Filtrer</button>
+                {% if filtered or sort != 'specie' %}
+                    <a class="btn btn--ghost" href="{% url 'list_plants' %}{% if pests_only %}?filter=pests{% endif %}">Effacer</a>
+                {% endif %}
+            </div>
+        </form>
+    {% endif %}
 
     {% if all_plants %}
         <ul class="grid">
@@ -32,6 +83,13 @@
                 <li>{% include "Plantes/plants/_specimen_card.html" with plant=plant %}</li>
             {% endfor %}
         </ul>
+
+    {% elif filtered %}
+        <div class="empty">
+            {% include "includes/_icon_leaf.html" %}
+            <p>Aucune plante ne correspond à ces critères.</p>
+            <a class="btn" href="{% url 'list_plants' %}">Effacer les filtres</a>
+        </div>
 
     {% elif pests_only %}
         <div class="empty">
@@ -48,4 +106,8 @@
         </div>
     {% endif %}
 
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'Plantes/js/filters.js' %}"></script>
 {% endblock %}

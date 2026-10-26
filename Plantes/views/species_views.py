@@ -57,7 +57,7 @@ def detail_specie(request, id_specie: int):
 
     my_plants = (Plant.objects
                  .filter(specie=specie, user=request.user)
-                 .select_related('spot')
+                 .select_related('spot__room')
                  .order_by('surname'))
 
     context = {'specie' : specie, 'my_plants' : my_plants}

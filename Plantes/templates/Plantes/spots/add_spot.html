@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Nouvel emplacement — PlantesManager{% endblock %}
 
@@ -24,4 +25,11 @@
         </form>
     </div>
 
+    {% include "Plantes/spots/_room_dialog.html" %}
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'Plantes/js/open_dialog.js' %}"></script>
+    <script src="{% static 'Plantes/js/quick_add.js' %}"></script>
 {% endblock %}

@@ -2,7 +2,7 @@
 <a class="specimen" href="{% url 'detail_plant' plant.id %}">
     <span class="plate__frame">
         {% if plant.spot %}
-            <span class="specimen__tag">{{ plant.spot }}</span>
+            <span class="specimen__tag">{% if plant.spot.room %}{{ plant.spot.room }} · {% endif %}{{ plant.spot }}</span>
         {% endif %}
         {# Parasites : puce sur la planche, statut déduit du journal #}
         {% if plant.pest_episode %}

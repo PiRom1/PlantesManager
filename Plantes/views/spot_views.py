@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from Plantes.forms import SpotForm
+from Plantes.forms import RoomForm, SpotForm
 from Plantes.models import Spot
 
 
@@ -21,8 +21,8 @@ def list_spots(request):
 
     spots = (Spot.objects
              .filter(user=request.user)
-             .select_related('exposure', 'humidity')
-             .order_by('name'))
+             .select_related('room', 'exposure', 'humidity')
+             .order_by('room__name', 'name'))
 
     context = {'all_spots' : spots}
 
@@ -42,7 +42,7 @@ def add_spot(request):
     url = 'Plantes/spots/add_spot.html'
 
     if request.method == 'POST':
-        form = SpotForm(request.POST)
+        form = SpotForm(request.POST, user=request.user)
 
         if form.is_valid():
             spot = form.save(commit=False)
@@ -58,9 +58,9 @@ def add_spot(request):
             return JsonResponse({'errors': form.errors}, status=400)
 
     else:
-        form = SpotForm()
+        form = SpotForm(user=request.user)
 
-    context = {'form' : form}
+    context = {'form' : form, 'room_form' : RoomForm()}
 
     return render(request, url, context)
 
@@ -75,7 +75,7 @@ def detail_spot(request, id_spot: int):
     spot = get_object_or_404(Spot, id = id_spot, user = request.user)
 
     if request.method == 'POST':
-        form = SpotForm(request.POST, instance=spot)
+        form = SpotForm(request.POST, instance=spot, user=request.user)
 
         if form.is_valid():
             form.save()
@@ -83,9 +83,9 @@ def detail_spot(request, id_spot: int):
             return redirect('list_spots')
 
     else:
-        form = SpotForm(instance=spot)
+        form = SpotForm(instance=spot, user=request.user)
 
-    context = {'form' : form, 'spot' : spot}
+    context = {'form' : form, 'spot' : spot, 'room_form' : RoomForm()}
 
     return render(request, url, context)
 

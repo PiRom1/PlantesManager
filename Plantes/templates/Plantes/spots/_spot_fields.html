@@ -4,6 +4,17 @@
 <div class="form__group">
     <span class="form__group-title">Identité</span>
     {% include "includes/_field.html" with field=form.name %}
+
+    {# Pas en ligne avec le nom : dans la boîte de création rapide, le menu serait écrasé #}
+    <div class="field{% if form.room.errors %} field--error{% endif %}">
+        <label class="field__label" for="{{ form.room.id_for_label }}">{{ form.room.label }}</label>
+        <div class="field__inline">
+            {{ form.room }}
+            <button class="btn" type="button" data-opens="dialog-room">Nouvelle</button>
+        </div>
+        {{ form.room.errors }}
+    </div>
+
     {% include "includes/_field.html" with field=form.description %}
 </div>
 

@@ -4,13 +4,14 @@ from datetime import datetime, time
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.db.models import F, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from Plantes.forms import PlantForm, PlantHistoryForm, PlantImageForm, PotForm, PropagationForm, SpecieForm, SpotForm
-from Plantes.models import Action, DetailFieldType, Plant, PlantHistory, PlantState, Pot, Specie, Spot
+from Plantes.forms import PlantForm, PlantHistoryForm, PlantImageForm, PotForm, PropagationForm, RoomForm, SpecieForm, SpotForm
+from Plantes.models import Action, DetailFieldType, Plant, PlantHistory, PlantState, Pot, Room, Specie, Spot
 
 
 def restrict_to_user(form, user):
@@ -21,7 +22,7 @@ def restrict_to_user(form, user):
 
     form.fields['spot'].queryset = Spot.objects.filter(user=user).order_by('name')
     form.fields['pot'].queryset = Pot.objects.filter(user=user).order_by('denomination')
-    form.fields['father'].queryset = Plant.objects.filter(user=user)
+    form.fields['father'].queryset = Plant.objects.filter(user=user).select_related('specie').order_by('surname', 'specie__vernacular_name')
 
 
 def selected_specie(form):
@@ -77,23 +78,80 @@ def log_propagation(mother, cutting, propagation):
 
 
 
+# Tris de la liste des plantes : code → (libellé, ordre). Les plantes sans
+# surnom, sans emplacement ou sans date passent en fin de liste
+PLANT_SORTS = {
+    'specie': ('Espèce', ['specie__vernacular_name', 'surname']),
+    'surname': ('Surnom', [F('surname').asc(nulls_last=True), 'specie__vernacular_name']),
+    'place': ('Pièce et emplacement', [F('spot__room__name').asc(nulls_last=True),
+                                       F('spot__name').asc(nulls_last=True), 'specie__vernacular_name']),
+    'state': ('État', [F('state__name').asc(nulls_last=True), 'specie__vernacular_name']),
+    'acquisition': ("Acquisition, la plus récente d'abord", [F('acquisition_date').desc(nulls_last=True)]),
+}
+
+
+def chosen_id(request, name):
+    """Identifiant passé dans l'URL (?room=3), ou None s'il est absent ou mal formé."""
+
+    value = request.GET.get(name, '')
+
+    return int(value) if value.isdigit() else None
+
+
 @login_required
 def list_plants(request):
-
+    """
+    Collection de l'utilisateur, filtrée et triée par l'URL :
+        ?q=         texte cherché dans le surnom, le cultivar et les noms de l'espèce
+        ?room=      pièce
+        ?spot=      emplacement (parmi ceux de la pièce si elle est choisie)
+        ?sort=      un code de PLANT_SORTS
+        ?filter=pests   seulement les parasitées, statut déduit du journal
+    """
 
     url = 'Plantes/plants/list_plants.html'
 
-    plants = list(Plant.objects
-                  .filter(user=request.user)
-                  .select_related('specie', 'state', 'spot', 'pot', 'substrate')
-                  .order_by('specie__vernacular_name'))
-
-    # Filtre « parasitées » : /plants/?filter=pests, le statut vient du journal
+    query = request.GET.get('q', '').strip()
+    room_id = chosen_id(request, 'room')
+    spot_id = chosen_id(request, 'spot')
+    sort = request.GET.get('sort') if request.GET.get('sort') in PLANT_SORTS else 'specie'
     pests_only = request.GET.get('filter') == 'pests'
+
+    rooms = Room.objects.filter(user=request.user).order_by('name')
+    spots = Spot.objects.filter(user=request.user).select_related('room').order_by('room__name', 'name')
+
+    if room_id:
+        spots = spots.filter(room_id=room_id)
+
+    # Un emplacement hors de la pièce choisie ne veut rien dire : on l'ignore
+    if spot_id and not spots.filter(id=spot_id).exists():
+        spot_id = None
+
+    plants = (Plant.objects
+              .filter(user=request.user)
+              .select_related('specie', 'state', 'spot__room', 'pot', 'substrate')
+              .order_by(*PLANT_SORTS[sort][1]))
+
+    if query:
+        plants = plants.filter(Q(surname__icontains=query) | Q(cultivar__icontains=query)
+                               | Q(specie__vernacular_name__icontains=query)
+                               | Q(specie__scientific_name__icontains=query))
+
+    if room_id:
+        plants = plants.filter(spot__room_id=room_id)
+
+    if spot_id:
+        plants = plants.filter(spot_id=spot_id)
+
+    plants = list(plants)
     infested = [plant for plant in plants if plant.pest_episode]
 
     context = {'all_plants' : infested if pests_only else plants,
-               'total' : len(plants), 'infested_count' : len(infested), 'pests_only' : pests_only}
+               'total' : len(plants), 'infested_count' : len(infested), 'pests_only' : pests_only,
+               'collection_total' : Plant.objects.filter(user=request.user).count(),
+               'query' : query, 'rooms' : rooms, 'spots' : spots, 'room_id' : room_id, 'spot_id' : spot_id,
+               'sort' : sort, 'sorts' : [(code, label) for code, (label, _) in PLANT_SORTS.items()],
+               'filtered' : bool(query or room_id or spot_id)}
 
     return render(request, url, context)
 
@@ -125,7 +183,7 @@ def add_plant(request):
         restrict_to_user(form, request.user)
 
     context = {'form' : form, 'selected_specie' : selected_specie(form),
-               'spot_form' : SpotForm(), 'pot_form' : PotForm(), 'specie_form' : SpecieForm()}
+               'spot_form' : SpotForm(user=request.user), 'room_form' : RoomForm(), 'pot_form' : PotForm(), 'specie_form' : SpecieForm()}
 
     return render(request, url, context)
 
@@ -175,7 +233,7 @@ def add_cutting(request, id_plant: int):
         propagation_form = PropagationForm()
 
     context = {'form' : form, 'selected_specie' : selected_specie(form), 'mother' : mother,
-               'propagation_form' : propagation_form, 'spot_form' : SpotForm(), 'pot_form' : PotForm(), 'specie_form' : SpecieForm()}
+               'propagation_form' : propagation_form, 'spot_form' : SpotForm(user=request.user), 'room_form' : RoomForm(), 'pot_form' : PotForm(), 'specie_form' : SpecieForm()}
 
     return render(request, url, context)
 
@@ -386,7 +444,7 @@ def edit_plant(request, id_plant: int):
         restrict_to_user(form, request.user)
 
     context = {'form' : form, 'plant' : plant, 'selected_specie' : selected_specie(form),
-               'spot_form' : SpotForm(), 'pot_form' : PotForm(), 'specie_form' : SpecieForm()}
+               'spot_form' : SpotForm(user=request.user), 'room_form' : RoomForm(), 'pot_form' : PotForm(), 'specie_form' : SpecieForm()}
 
     return render(request, url, context)
 

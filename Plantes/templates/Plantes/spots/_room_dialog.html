@@ -1,0 +1,18 @@
+{# Création d'une pièce à la volée depuis le formulaire emplacement. Attend `form` (SpotForm) et `room_form`. #}
+{# Hors du <form> de la page : un formulaire ne s'imbrique pas dans un autre. Géré par quick_add.js #}
+<dialog id="dialog-room" data-post-url="{% url 'add_room' %}" data-target="{{ form.room.auto_id }}">
+    <div class="dialog__head">
+        <h2>Nouvelle pièce</h2>
+    </div>
+    <p class="errorlist" data-errors></p>
+
+    <form class="form" method="dialog">
+        {% csrf_token %}
+        {% include "includes/_form_fields.html" with form=room_form %}
+
+        <div class="dialog__actions">
+            <button class="btn btn--ghost" type="button" onclick="this.closest('dialog').close()">Annuler</button>
+            <button class="btn btn--primary" type="submit">Créer la pièce</button>
+        </div>
+    </form>
+</dialog>

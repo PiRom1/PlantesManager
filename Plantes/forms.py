@@ -2,7 +2,7 @@
 
 from django import forms
 
-from Plantes.models import Plant, PlantHistory, Pot, PropagationMedium, PropagationMethod, Specie, Spot
+from Plantes.models import Plant, PlantHistory, Pot, PropagationMedium, PropagationMethod, Room, Specie, Spot
 
 
 class PlantForm(forms.ModelForm):
@@ -71,6 +71,9 @@ class PlantForm(forms.ModelForm):
         # supprimée du catalogue), mais la saisie, elle, doit en désigner une
         self.fields['specie'].required = True
 
+        # Le surnom seul ne dit pas de quelle plante il s'agit
+        self.fields['father'].label_from_instance = lambda plant: plant.choice_label
+
         # L'état ne se choisit qu'à la création. Ensuite, il découle du journal :
         # un changement ou une correction passe par une entrée du journal
         if self.instance.pk:
@@ -86,13 +89,40 @@ class PlantImageForm(forms.ModelForm):
         labels = {'image': 'Photo'}
 
 
+class RoomForm(forms.ModelForm):
+    """Pièce de la maison : un nom, et c'est tout ; les conditions sont sur l'emplacement."""
+
+    class Meta:
+        model = Room
+        fields = ['name', 'description']
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'Salon, chambre, véranda, ...'}),
+            'description': forms.Textarea(attrs={'rows': 2}),
+        }
+        labels = {
+            'name': 'Nom',
+            'description': 'Description',
+        }
+
+    def __init__(self, *args, **kwargs):
+        # Ce formulaire cohabite avec celui de l'emplacement (mêmes noms de
+        # champs) dans la même page : les identifiants HTML doivent différer
+        kwargs.setdefault('auto_id', 'id_room_%s')
+        super().__init__(*args, **kwargs)
+
+
 class SpotForm(forms.ModelForm):
-    """Emplacement : un endroit de la maison aux conditions homogènes."""
+    """
+    Emplacement : un endroit de la maison aux conditions homogènes.
+
+    `user` limite le menu des pièces aux siennes.
+    """
 
     class Meta:
         model = Spot
         fields = [
             'name',
+            'room',
             'description',
             'exposure',
             'humidity',
@@ -105,6 +135,7 @@ class SpotForm(forms.ModelForm):
         ]
         labels = {
             'name': 'Nom',
+            'room': 'Pièce',
             'description': 'Description',
             'exposure': 'Exposition',
             'humidity': 'Humidité',
@@ -115,6 +146,12 @@ class SpotForm(forms.ModelForm):
             'has_heater': 'Chauffage',
             'has_moister': 'Humidificateur',
         }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields['room'].queryset = Room.objects.filter(user=user).order_by('name')
+        self.fields['room'].empty_label = 'Aucune'
 
 
 class PotForm(forms.ModelForm):
@@ -160,6 +197,7 @@ class PlantHistoryForm(forms.ModelForm):
         widgets = {
             'date': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
             'comment': forms.Textarea(attrs={'rows': 3}),
+            'image': forms.ClearableFileInput(attrs={'accept': 'image/*'}),
         }
         labels = {
             'action': 'Action',
@@ -234,11 +272,16 @@ class SpecieForm(forms.ModelForm):
             'min_temp',
             'max_temp',
             'recommended_substrate',
+            'abiotic_conditions',
         ]
         widgets = {
             'vernacular_name': forms.TextInput(attrs={'placeholder': 'Monstera, Pilea, ...'}),
             'scientific_name': forms.TextInput(attrs={'placeholder': 'Genre espèce, en latin'}),
             'description': forms.Textarea(attrs={'rows': 4}),
+            'abiotic_conditions': forms.Textarea(attrs={
+                'rows': 6,
+                'placeholder': "Lumière vive sans soleil direct, substrat qui sèche entre deux arrosages, craint les courants d'air...",
+            }),
         }
         labels = {
             'vernacular_name': 'Nom commun',
@@ -255,4 +298,8 @@ class SpecieForm(forms.ModelForm):
             'min_temp': 'Température minimale (°C)',
             'max_temp': 'Température maximale (°C)',
             'recommended_substrate': 'Substrat conseillé',
+            'abiotic_conditions': 'Conditions abiotiques favorables',
+        }
+        help_texts = {
+            'abiotic_conditions': "Tes notes de lecture sur ce qui convient à l'espèce. Affichées sur la fiche de chacune de tes plantes de cette espèce.",
         }

@@ -457,12 +457,32 @@ class Specie(models.Model):
     max_temp = models.IntegerField(default=None, blank=True, null=True)
     recommended_substrate = models.ForeignKey(Substrate, on_delete=models.SET_NULL, null=True, blank=True)
 
+    # Notes de lecture en texte libre, en complément des champs structurés
+    # ci-dessus : ce qu'on retient des conditions qui conviennent à l'espèce
+    abiotic_conditions = models.TextField(default=None, null=True, blank=True)
+
     def __str__(self):
         return f'{self.vernacular_name} ({self.scientific_name})'
 
 
 
 
+
+
+
+class Room(models.Model):
+    """
+    A room of your house. The abiotic conditions live on the spots inside it :
+    the room only tells where a spot is.
+    """
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, default=None, null=True, blank=True)
+
+    name = models.CharField(max_length=100)
+    description = models.TextField(default=None, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
 
 
 
@@ -475,6 +495,8 @@ class Spot(models.Model):
 
     name = models.CharField(max_length=100)
     description = models.TextField(default=None, null = True, blank=True)
+    # Nullable : les emplacements existants n'ont pas de pièce, à rattacher à la main
+    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)
 
     exposure = models.ForeignKey(Exposure, on_delete=models.SET_NULL, null=True, blank=True)
     humidity = models.ForeignKey(Humidity, on_delete=models.SET_NULL, null=True, blank=True)
@@ -674,6 +696,19 @@ class Plant(models.Model):
             return self.surname
         specie = f"{self.specie} '{self.cultivar}'" if self.cultivar else f'{self.specie}'
         return f'{specie} #{self.pk}'
+
+    @property
+    def choice_label(self):
+        """
+        Libellé dans un menu déroulant : le surnom seul ne dit pas de quelle
+        plante il s'agit, on lui adjoint le nom commun. Sans surnom, le libellé
+        courant contient déjà l'espèce.
+        """
+
+        if self.surname and self.specie:
+            return f'{self.surname} · {self.specie.vernacular_name}'
+
+        return str(self)
 
     def refresh_state(self):
         """

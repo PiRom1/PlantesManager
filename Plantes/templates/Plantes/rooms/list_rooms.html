@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mes pièces — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <header class="page-head">
+        <div>
+            <h1 class="page-head__title">Pièces</h1>
+            <p class="page-head__sub">Les pièces de la maison. Les conditions, elles, se décrivent sur chaque emplacement.</p>
+        </div>
+        <div class="page-head__actions">
+            <a class="btn btn--primary" href="{% url 'add_room' %}">Ajouter une pièce</a>
+        </div>
+    </header>
+
+    {% if all_rooms %}
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Emplacements</th>
+                        <th>Plantes</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for room in all_rooms %}
+                        <tr data-href="{% url 'detail_room' room.id %}">
+                            <td>
+                                <a href="{% url 'detail_room' room.id %}">{{ room.name }}</a>
+                                {% if room.description %}<br><span class="quiet">{{ room.description|truncatechars:60 }}</span>{% endif %}
+                            </td>
+                            <td class="is-num">{{ room.spot_count }}</td>
+                            <td class="is-num">{{ room.plant_count }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    {% else %}
+        <div class="empty">
+            {% include "includes/_icon_leaf.html" %}
+            <p>Aucune pièce pour l'instant. Une pièce regroupe des emplacements : le salon avec son étagère et sa vitrine, par exemple.</p>
+            <a class="btn btn--primary" href="{% url 'add_room' %}">Créer la première</a>
+        </div>
+    {% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+    <script src="{% static 'Plantes/js/clickable_rows.js' %}"></script>
+{% endblock %}

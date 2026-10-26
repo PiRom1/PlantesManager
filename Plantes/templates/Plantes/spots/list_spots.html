@@ -21,6 +21,7 @@
                 <thead>
                     <tr>
                         <th>Nom</th>
+                        <th>Pièce</th>
                         <th>Exposition</th>
                         <th>Humidité</th>
                         <th>Températures</th>
@@ -37,6 +38,7 @@
                                 <a href="{% url 'detail_spot' spot.id %}">{{ spot.name }}</a>
                                 {% if spot.description %}<br><span class="quiet">{{ spot.description|truncatechars:60 }}</span>{% endif %}
                             </td>
+                            <td>{{ spot.room|default_if_none:"—" }}</td>
                             <td>{{ spot.exposure|default_if_none:"—" }}</td>
                             <td>{{ spot.humidity|default_if_none:"—" }}</td>
                             <td class="is-num">

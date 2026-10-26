@@ -12,6 +12,7 @@ from .models import (
     PlantHistory,
     PlantState,
     Pot,
+    Room,
     Specie,
     Spot,
     Substrate,
@@ -126,10 +127,19 @@ class SpecieAdmin(admin.ModelAdmin):
     ordering = ('vernacular_name',)
 
 
+@admin.register(Room)
+class RoomAdmin(admin.ModelAdmin):
+    list_display = ('name', 'user', 'description')
+    list_filter = ('user',)
+    search_fields = ('name', 'description')
+    ordering = ('name',)
+
+
 @admin.register(Spot)
 class SpotAdmin(admin.ModelAdmin):
     list_display = (
         'name',
+        'room',
         'exposure',
         'humidity',
         'min_temp',
@@ -141,15 +151,16 @@ class SpotAdmin(admin.ModelAdmin):
     )
     list_editable = ('has_additional_light', 'has_heater', 'has_moister')
     list_filter = (
+        'room',
         'exposure',
         'humidity',
         'has_additional_light',
         'has_heater',
         'has_moister',
     )
-    search_fields = ('name', 'description')
-    list_select_related = ('exposure', 'humidity')
-    autocomplete_fields = ('exposure', 'humidity')
+    search_fields = ('name', 'description', 'room__name')
+    list_select_related = ('room', 'exposure', 'humidity')
+    autocomplete_fields = ('room', 'exposure', 'humidity')
     ordering = ('name',)
 
 

@@ -141,7 +141,7 @@
 
     <form class="form" method="dialog">
         {% csrf_token %}
-        {% include "includes/_form_fields.html" with form=spot_form %}
+        {% include "Plantes/spots/_spot_fields.html" with form=spot_form %}
 
         <div class="dialog__actions">
             <button class="btn btn--ghost" type="button" onclick="this.closest('dialog').close()">Annuler</button>
@@ -149,6 +149,9 @@
         </div>
     </form>
 </dialog>
+
+{# Pièce créée depuis la boîte emplacement : les deux boîtes s'empilent, celle-ci se referme seule #}
+{% include "Plantes/spots/_room_dialog.html" with form=spot_form %}
 
 
 <dialog id="dialog-pot" data-post-url="{% url 'add_pot' %}" data-target="{{ form.pot.auto_id }}">

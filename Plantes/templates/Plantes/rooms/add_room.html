@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvelle pièce — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <header class="page-head">
+        <div>
+            {% url 'list_rooms' as back_url %}
+            {% include "includes/_back.html" with url=back_url label="Pièces" %}
+            <h1 class="page-head__title">Nouvelle pièce</h1>
+        </div>
+    </header>
+
+    <div class="panel">
+        <form class="form" method="post">
+            {% csrf_token %}
+            {% include "Plantes/rooms/_room_fields.html" %}
+
+            <div class="form__actions">
+                <button class="btn btn--primary" type="submit">Créer la pièce</button>
+                <a class="btn btn--ghost" href="{% url 'list_rooms' %}">Annuler</a>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}

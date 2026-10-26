@@ -149,7 +149,7 @@
                 <dt>Emplacement</dt>
                 <dd>
                     {% if plant.spot %}
-                        <a href="{% url 'detail_spot' plant.spot.id %}">{{ plant.spot }}</a>
+                        {% if plant.spot.room %}<a href="{% url 'detail_room' plant.spot.room.id %}">{{ plant.spot.room }}</a> · {% endif %}<a href="{% url 'detail_spot' plant.spot.id %}">{{ plant.spot }}</a>
                     {% else %}
                         —
                     {% endif %}
@@ -177,6 +177,17 @@
                     {% endfor %}
                 </dd>
             </dl>
+
+            {# Notes portées par l'espèce, en lecture seule : elles se modifient sur sa fiche #}
+            {% if plant.specie %}
+                <h3 class="section__subtitle">Ce qui convient à l'espèce</h3>
+                {% if plant.specie.abiotic_conditions %}
+                    <p class="prose">{{ plant.specie.abiotic_conditions|linebreaksbr }}</p>
+                    <p class="quiet">Notes de l'espèce, à <a href="{% url 'edit_specie' plant.specie.id %}">modifier sur sa fiche</a>.</p>
+                {% else %}
+                    <p class="quiet">Rien de noté encore sur l'espèce. <a href="{% url 'edit_specie' plant.specie.id %}">Ajouter des notes</a> sur sa fiche.</p>
+                {% endif %}
+            {% endif %}
         </section>
 
         <section class="section panel">
@@ -380,6 +391,7 @@
     <script src="{% static 'Plantes/js/open_dialog.js' %}"></script>
     <script src="{% static 'Plantes/js/care_detail.js' %}"></script>
     <script src="{% static 'Plantes/js/tags_input.js' %}"></script>
+    <script src="{% static 'Plantes/js/photo_capture.js' %}"></script>
     <script src="{% static 'Plantes/js/lightbox.js' %}"></script>
     <script src="{% static 'Plantes/js/context_menu.js' %}"></script>
 {% endblock %}

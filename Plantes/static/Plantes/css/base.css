@@ -453,6 +453,38 @@ h3 {
     color: var(--text-3);
 }
 
+/* Barre de filtres et de tri d'une liste */
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--sp-3);
+    padding: var(--sp-4);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-surface);
+}
+
+.filters .field {
+    flex: 1 1 160px;
+}
+
+.filters__search {
+    flex-basis: 240px;
+}
+
+.filters__actions {
+    display: flex;
+    gap: var(--sp-2);
+}
+
+/* Sous-titre dans une section, après une légende */
+.section__subtitle {
+    margin-top: var(--sp-2);
+    font-size: var(--fs-md);
+    color: var(--text-2);
+}
+
 /* Planche : une image encadrée comme une gravure, avec sa légende */
 .plate {
     display: flex;

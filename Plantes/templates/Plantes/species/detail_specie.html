@@ -92,6 +92,11 @@
                     <dt>Substrat conseillé</dt>
                     <dd>{{ specie.recommended_substrate|default_if_none:"—" }}</dd>
                 </dl>
+
+                {% if specie.abiotic_conditions %}
+                    <h3 class="section__subtitle">Conditions abiotiques favorables</h3>
+                    <p class="prose">{{ specie.abiotic_conditions|linebreaksbr }}</p>
+                {% endif %}
             </section>
 
             <section class="section panel">
@@ -171,7 +176,7 @@
             {% for plant in my_plants %}
                 <li>
                     <a href="{% url 'detail_plant' plant.id %}">{{ plant }}</a>
-                    {% if plant.spot %}<span class="quiet">{{ plant.spot }}</span>{% endif %}
+                    {% if plant.spot %}<span class="quiet">{% if plant.spot.room %}{{ plant.spot.room }} · {% endif %}{{ plant.spot }}</span>{% endif %}
                 </li>
             {% empty %}
                 <li class="linklist__empty">

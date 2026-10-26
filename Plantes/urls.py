@@ -1,6 +1,6 @@
 from django.urls import path, include
 from django.views.generic import RedirectView
-from Plantes.views import media_views, plant_views, pot_views, species_views, spot_views
+from Plantes.views import media_views, plant_views, pot_views, room_views, species_views, spot_views
 
 urlpatterns = [
     # Racine : redirige vers la page d'accueil (login_required s'occupe des non-connectés)
@@ -25,6 +25,12 @@ urlpatterns = [
     path('plant/<int:id_plant>/image/', plant_views.change_plant_image, name='change_plant_image'),
     path('plant/<int:id_plant>/history/<int:id_entry>/edit/', plant_views.edit_history, name='edit_history'),
     path('plant/<int:id_plant>/history/<int:id_entry>/delete/', plant_views.delete_history, name='delete_history'),
+
+    # Rooms
+    path('rooms/', room_views.list_rooms, name='list_rooms'),
+    path('room/add/', room_views.add_room, name='add_room'),
+    path('room/<int:id_room>/', room_views.detail_room, name='detail_room'),
+    path('room/<int:id_room>/delete/', room_views.delete_room, name='delete_room'),
 
     # Spots
     path('spots/', spot_views.list_spots, name='list_spots'),

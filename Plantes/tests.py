@@ -14,7 +14,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from Plantes.models import Action, Plant, PlantHistory, PlantState, Pot, Specie, Spot, User
+from Plantes.models import Action, Plant, PlantHistory, PlantState, Pot, Room, Specie, Spot, User
 from Plantes.views.plant_views import build_detail, clean_tags
 
 
@@ -286,7 +286,7 @@ class CuttingTests(TestCase):
         self.assertContains(response, 'Déclarer une bouture')
         self.assertContains(response, f'<input type="hidden" name="specie" value="{self.specie.id}"', html=False)
         self.assertContains(response, 'value="Variegata"')
-        self.assertContains(response, f'<option value="{self.mother.id}" selected>Maman</option>', html=False)
+        self.assertContains(response, f'<option value="{self.mother.id}" selected>Maman · Monstera</option>', html=False)
         self.assertContains(response, f'<option value="{self.cutting_state.id}" selected>Bouture</option>', html=False)
         self.assertContains(response, 'value="Bouture de Maman"')
         self.assertContains(response, 'name="method"')
@@ -399,6 +399,191 @@ class DeleteTests(TestCase):
         other = Plant.objects.create(user=make_user('autre'))
         self.assertEqual(self.client.post(reverse('delete_plant', args=[other.id])).status_code, 404)
         self.assertTrue(Plant.objects.filter(id=other.id).exists())
+
+
+class RoomTests(TestCase):
+
+    def setUp(self):
+        self.user = make_user()
+        self.client.force_login(self.user)
+        self.room = Room.objects.create(user=self.user, name='Salon')
+        self.spot = Spot.objects.create(user=self.user, name='Étagère', room=self.room)
+        self.specie = Specie.objects.create(vernacular_name='Monstera', scientific_name='Monstera deliciosa')
+        self.plant = Plant.objects.create(user=self.user, specie=self.specie, spot=self.spot)
+
+    def test_supprimer_une_piece_laisse_les_emplacements_sans_piece(self):
+        response = self.client.get(reverse('detail_room', args=[self.room.id]))
+        self.assertContains(response, "1 emplacement s'y trouve")
+
+        response = self.client.post(reverse('delete_room', args=[self.room.id]))
+        self.spot.refresh_from_db()
+
+        self.assertRedirects(response, reverse('list_rooms'))
+        self.assertFalse(Room.objects.filter(id=self.room.id).exists())
+        self.assertIsNone(self.spot.room)
+        self.assertEqual(self.plant.spot, self.spot)
+
+    def test_la_piece_s_affiche_devant_l_emplacement(self):
+        response = self.client.get(reverse('detail_plant', args=[self.plant.id]))
+        self.assertContains(response, 'Salon</a> · <a href="%s">Étagère' % reverse('detail_spot', args=[self.spot.id]))
+
+        response = self.client.get(reverse('list_plants'))
+        self.assertContains(response, '<span class="specimen__tag">Salon · Étagère</span>')
+
+    def test_le_menu_des_pieces_ne_propose_que_les_miennes(self):
+        Room.objects.create(user=make_user('autre'), name='Chambre des autres')
+
+        response = self.client.get(reverse('add_spot'))
+        self.assertContains(response, 'Salon')
+        self.assertNotContains(response, 'Chambre des autres')
+
+        # Même chose dans la popup emplacement du formulaire plante
+        response = self.client.get(reverse('add_plant'))
+        self.assertContains(response, 'Salon')
+        self.assertNotContains(response, 'Chambre des autres')
+
+    def test_creation_a_la_volee_en_json(self):
+        response = self.client.post(reverse('add_room'), {'name': 'Véranda'}, headers={'X-Requested-With': 'XMLHttpRequest'})
+
+        self.assertEqual(response.status_code, 200)
+        room = Room.objects.get(name='Véranda')
+        self.assertEqual(room.user, self.user)
+        self.assertEqual(response.json(), {'id': room.id, 'name': 'Véranda'})
+
+    def test_les_pieces_des_autres_sont_introuvables(self):
+        other = Room.objects.create(user=make_user('autre'), name='Chambre')
+
+        self.assertEqual(self.client.get(reverse('detail_room', args=[other.id])).status_code, 404)
+        self.assertEqual(self.client.post(reverse('delete_room', args=[other.id])).status_code, 404)
+
+
+class PlantListFiltersTests(TestCase):
+
+    def setUp(self):
+        self.user = make_user()
+        self.client.force_login(self.user)
+        self.salon = Room.objects.create(user=self.user, name='Salon')
+        self.chambre = Room.objects.create(user=self.user, name='Chambre')
+        self.etagere = Spot.objects.create(user=self.user, name='Etagère', room=self.salon)
+        self.vitrine = Spot.objects.create(user=self.user, name='Vitrine', room=self.salon)
+        self.bureau = Spot.objects.create(user=self.user, name='Bureau', room=self.chambre)
+        monstera = Specie.objects.create(vernacular_name='Monstera', scientific_name='Monstera deliciosa')
+        pilea = Specie.objects.create(vernacular_name='Pilea', scientific_name='Pilea peperomioides')
+        self.momo = Plant.objects.create(user=self.user, specie=monstera, surname='Momo', spot=self.etagere)
+        self.pipi = Plant.objects.create(user=self.user, specie=pilea, surname='Pipi', spot=self.vitrine)
+        self.anon = Plant.objects.create(user=self.user, specie=monstera, spot=self.bureau)
+
+    def names(self, response):
+        return [plant.id for plant in response.context['all_plants']]
+
+    def test_sans_filtre_tout_le_monde_trie_par_espece(self):
+        response = self.client.get(reverse('list_plants'))
+        self.assertEqual(self.names(response), [self.anon.id, self.momo.id, self.pipi.id])
+        self.assertContains(response, '3 plantes dans ta collection')
+
+    def test_recherche_sur_surnom_et_espece(self):
+        self.assertEqual(self.names(self.client.get(reverse('list_plants'), {'q': 'momo'})), [self.momo.id])
+        self.assertEqual(self.names(self.client.get(reverse('list_plants'), {'q': 'deliciosa'})), [self.anon.id, self.momo.id])
+
+    def test_filtre_par_piece_puis_emplacement(self):
+        response = self.client.get(reverse('list_plants'), {'room': self.salon.id})
+        self.assertEqual(self.names(response), [self.momo.id, self.pipi.id])
+        self.assertContains(response, '2 plantes sur 3')
+        # Le menu des emplacements ne propose que ceux de la pièce
+        self.assertEqual([spot.id for spot in response.context['spots']], [self.etagere.id, self.vitrine.id])
+
+        response = self.client.get(reverse('list_plants'), {'room': self.salon.id, 'spot': self.vitrine.id})
+        self.assertEqual(self.names(response), [self.pipi.id])
+
+    def test_emplacement_hors_de_la_piece_ignore(self):
+        response = self.client.get(reverse('list_plants'), {'room': self.salon.id, 'spot': self.bureau.id})
+        self.assertEqual(self.names(response), [self.momo.id, self.pipi.id])
+        self.assertIsNone(response.context['spot_id'])
+
+    def test_tri_par_surnom_les_sans_surnom_a_la_fin(self):
+        response = self.client.get(reverse('list_plants'), {'sort': 'surname'})
+        self.assertEqual(self.names(response), [self.momo.id, self.pipi.id, self.anon.id])
+
+    def test_tri_par_piece_et_emplacement(self):
+        response = self.client.get(reverse('list_plants'), {'sort': 'place'})
+        self.assertEqual(self.names(response), [self.anon.id, self.momo.id, self.pipi.id])
+
+    def test_parametres_invalides_ignores(self):
+        response = self.client.get(reverse('list_plants'), {'room': 'abc', 'sort': 'nimporte'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(self.names(response)), 3)
+
+    def test_aucun_resultat(self):
+        response = self.client.get(reverse('list_plants'), {'q': 'cactus'})
+        self.assertContains(response, 'Aucune plante ne correspond')
+
+    def test_le_filtre_parasitees_garde_les_autres_filtres(self):
+        response = self.client.get(reverse('list_plants'), {'room': self.salon.id})
+        self.assertContains(response, f'href="?room={self.salon.id}&amp;filter=pests"')
+
+
+class SpecieNotesTests(TestCase):
+
+    def setUp(self):
+        self.user = make_user()
+        self.client.force_login(self.user)
+        self.specie = Specie.objects.create(vernacular_name='Monstera', scientific_name='Monstera deliciosa',
+                                            abiotic_conditions='Lumière vive sans soleil direct.\nCraint les courants d\'air.')
+        self.plant = Plant.objects.create(user=self.user, specie=self.specie)
+
+    def test_les_notes_de_l_espece_se_lisent_sur_la_plante(self):
+        response = self.client.get(reverse('detail_plant', args=[self.plant.id]))
+
+        self.assertContains(response, 'Lumière vive sans soleil direct.<br>Craint les courants d&#x27;air.')
+        self.assertContains(response, reverse('edit_specie', args=[self.specie.id]))
+
+    def test_sans_notes_la_plante_invite_a_en_ajouter(self):
+        self.specie.abiotic_conditions = None
+        self.specie.save()
+
+        response = self.client.get(reverse('detail_plant', args=[self.plant.id]))
+        self.assertContains(response, "Rien de noté encore sur l'espèce.")
+
+    def test_les_notes_se_modifient_sur_la_fiche_espece(self):
+        response = self.client.post(reverse('edit_specie', args=[self.specie.id]), {
+            'vernacular_name': 'Monstera',
+            'scientific_name': 'Monstera deliciosa',
+            'abiotic_conditions': 'Substrat drainant.',
+        })
+        self.specie.refresh_from_db()
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.specie.abiotic_conditions, 'Substrat drainant.')
+        self.assertContains(self.client.get(reverse('detail_specie', args=[self.specie.id])), 'Substrat drainant.')
+
+
+class MotherChoiceLabelTests(TestCase):
+
+    def setUp(self):
+        self.user = make_user()
+        self.client.force_login(self.user)
+        self.specie = Specie.objects.create(vernacular_name='Monstera', scientific_name='Monstera deliciosa')
+
+    def test_surnom_et_nom_commun(self):
+        plant = Plant.objects.create(user=self.user, specie=self.specie, surname='Momo')
+        self.assertEqual(plant.choice_label, 'Momo · Monstera')
+
+    def test_sans_surnom_le_libelle_courant_contient_deja_l_espece(self):
+        plant = Plant.objects.create(user=self.user, specie=self.specie)
+        self.assertEqual(plant.choice_label, f'Monstera (Monstera deliciosa) #{plant.id}')
+
+    def test_sans_espece_le_surnom_seul(self):
+        plant = Plant.objects.create(user=self.user, surname='Momo')
+        self.assertEqual(plant.choice_label, 'Momo')
+
+    def test_le_menu_plante_mere_affiche_l_espece(self):
+        plant = Plant.objects.create(user=self.user, specie=self.specie, surname='Momo')
+        Plant.objects.create(user=make_user('autre'), specie=self.specie, surname='Pas à moi')
+
+        response = self.client.get(reverse('add_plant'))
+
+        self.assertContains(response, f'<option value="{plant.id}">Momo · Monstera</option>', html=True)
+        self.assertNotContains(response, 'Pas à moi')
 
 
 class SimilarSpeciesTests(TestCase):

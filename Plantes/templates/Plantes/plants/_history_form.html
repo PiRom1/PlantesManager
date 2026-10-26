@@ -78,4 +78,14 @@
     {% include "includes/_field.html" with field=history_form.n_leaves %}
 </div>
 
-{% include "includes/_field.html" with field=history_form.image %}
+{# Photo : fichier de la galerie, ou prise sur le champ. Le second champ, caché, ouvre #}
+{# l'appareil photo sur mobile (capture) ; photo_capture.js recopie la prise dans le premier #}
+<div class="field{% if history_form.image.errors %} field--error{% endif %}">
+    <label class="field__label" for="{{ history_form.image.id_for_label }}">{{ history_form.image.label }}</label>
+    <div class="field__inline">
+        {{ history_form.image }}
+        <button class="btn" type="button" data-captures-for="{{ history_form.image.auto_id }}">Prendre une photo</button>
+    </div>
+    <input type="file" accept="image/*" capture="environment" hidden data-capture-for="{{ history_form.image.auto_id }}">
+    {{ history_form.image.errors }}
+</div>
