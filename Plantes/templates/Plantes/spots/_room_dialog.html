@@ -1,6 +1,7 @@
-{# Création d'une pièce à la volée depuis le formulaire emplacement. Attend `form` (SpotForm) et `room_form`. #}
+{# Création d'une pièce à la volée depuis le formulaire emplacement. Attend `form` (SpotForm) et `room_form`, #}
+{# et éventuellement `also` : l'identifiant d'un autre menu des pièces où la sélectionner aussi. #}
 {# Hors du <form> de la page : un formulaire ne s'imbrique pas dans un autre. Géré par quick_add.js #}
-<dialog id="dialog-room" data-post-url="{% url 'add_room' %}" data-target="{{ form.room.auto_id }}">
+<dialog id="dialog-room" data-post-url="{% url 'add_room' %}" data-target="{{ form.room.auto_id }}{% if also %} {{ also }}{% endif %}">
     <div class="dialog__head">
         <h2>Nouvelle pièce</h2>
     </div>

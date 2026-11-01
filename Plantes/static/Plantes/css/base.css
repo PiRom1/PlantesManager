@@ -1074,6 +1074,12 @@ dialog::backdrop {
     min-width: 0;
 }
 
+/* Champ en attente d'un autre (l'emplacement tant que la pièce n'est pas choisie) :
+   sa place est réservée, pour que la ligne ne bouge pas quand il apparaît */
+.field--pending {
+    visibility: hidden;
+}
+
 .field--check {
     flex-direction: row;
     align-items: center;
@@ -1603,4 +1609,180 @@ fieldset.form__group legend + * {
 
 .context-menu__item:hover {
     background: var(--surface-3);
+}
+
+/* Entretien groupé : une action, puis les plantes par emplacement */
+.care {
+    gap: var(--sp-5);
+}
+
+.care__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-3);
+}
+
+.care-group {
+    border-top: 1px solid var(--line);
+}
+
+.care-group__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    padding: var(--sp-3) 0;
+    cursor: pointer;
+    list-style: none;
+}
+
+.care-group__head::-webkit-details-marker {
+    display: none;
+}
+
+.care-group__head::after {
+    content: "⌄";
+    color: var(--text-3);
+    transition: transform 0.15s ease;
+}
+
+.care-group[open] > .care-group__head::after {
+    transform: rotate(180deg);
+}
+
+.care-group__pick {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    min-width: 0;
+    cursor: pointer;
+}
+
+.care-group__name {
+    font-weight: 500;
+}
+
+.care-plant {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: var(--sp-2) var(--sp-3);
+    padding: var(--sp-2) 0 var(--sp-2) var(--sp-2);
+    border-top: 1px solid var(--line);
+}
+
+.care-plant__row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    min-width: 0;
+    cursor: pointer;
+}
+
+/* Cases grandes : souvent cochées au pouce, l'arrosoir dans l'autre main */
+.care input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    accent-color: var(--leaf);
+}
+
+.care-plant__thumb {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    color: var(--text-3);
+}
+
+.care-plant__thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.care-plant__thumb svg {
+    width: 50%;
+    height: auto;
+    opacity: 0.5;
+}
+
+.care-plant__who {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.care-plant__name {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.care-plant__sub {
+    display: flex;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    color: var(--text-2);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.care-plant__sub .latin {
+    font-size: 1em;
+}
+
+.care-plant__state {
+    margin-left: auto;
+}
+
+.care-plant--refined .care-plant__refine {
+    border-color: var(--ochre);
+    color: var(--ochre);
+}
+
+.care-plant__more {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    margin-bottom: var(--sp-2);
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-control);
+}
+
+/* Toujours à portée de pouce, même au bout de cent plantes */
+.care-bar {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--r-control);
+    box-shadow: 0 -8px 24px rgba(4, 8, 6, 0.5);
+}
+
+@media (max-width: 600px) {
+    .care-plant__state {
+        display: none;
+    }
+
+    /* Peu de place : le nom va à la ligne plutôt que d'être coupé */
+    .care-plant__name {
+        white-space: normal;
+    }
 }

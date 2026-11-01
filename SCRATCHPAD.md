@@ -34,3 +34,20 @@ dans une pièce ; la pièce d'une plante se déduit). Les emplacements existants
 rattacher à la main.
 
 Migration unique : `0008_room_specie_notes` (à lancer par Romain). Commit et push par Romain.
+
+## Lot du 01/11/2026
+
+| Lot | Contenu | État |
+|-----|---------|------|
+| L | Formulaire plante : pièce d'abord, puis emplacements de cette pièce (filtre côté navigateur, `room_spots.js`), pièce créable à la volée à côté | fait |
+
+Pas de migration : `PlantForm.room` n'est pas un champ du modèle. Pièce sans emplacement
+refusée (la plante n'a pas de pièce à elle, le choix serait perdu). Pas d'endpoint : chaque
+option d'emplacement porte sa pièce (`data-room`).
+| M | Onglet « Entretien » : une action et ses options, un commentaire, les plantes cochées par pièce · emplacement (case par groupe, case « tout »), précisions par plante (options, commentaire, état, mesures, photo) ; une entrée de journal par plante | fait |
+
+Entretien : pas de modèle, tout passe par `PlantHistory`. Les précisions sont un gabarit `<template>`
+cloné à la demande (`care_bulk.js`, préfixe `p__` → `p<id>`), sinon cent plantes × tous les champs de
+toutes les actions chargeraient la page pour rien. Les précisions sont préremplies du commun et font
+foi pour la plante (champ caché `p<id>-refined`) ; un champ jamais touché suit le commun. Les plantes
+n'apparaissent qu'une fois l'action choisie. Les mortes ne sont pas proposées. Pas de migration.

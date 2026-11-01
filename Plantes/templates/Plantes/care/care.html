@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Entretien — PlantesManager{% endblock %}
+
+{% block content %}
+
+    <header class="page-head">
+        <div>
+            <h1 class="page-head__title">Entretien</h1>
+            <p class="page-head__sub">Une action, plusieurs plantes : une entrée de journal pour chacune.</p>
+        </div>
+    </header>
+
+    {% if saved %}
+        <p class="notice">{{ saved }} entrée{{ saved|pluralize }} ajoutée{{ saved|pluralize }} au journal.</p>
+    {% endif %}
+
+    {% if not total %}
+        <p class="quiet">Aucune plante à entretenir. <a href="{% url 'add_plant' %}">Ajoute ta première plante.</a></p>
+    {% else %}
+
+    <form class="form care" method="post" enctype="multipart/form-data" data-care>
+        {% csrf_token %}
+
+        {% for error in errors %}
+            <p class="notice notice--error">{{ error }}</p>
+        {% endfor %}
+
+        <section class="panel" data-common>
+            <span class="form__group-title">1. Quelle action ?</span>
+
+            <div class="form__row">
+                {% include "includes/_field.html" with field=form.action %}
+                {% include "includes/_field.html" with field=form.date %}
+            </div>
+
+            {# Options de l'action, les mêmes que dans le journal ; care_detail.js montre celles de l'action choisie #}
+            {% include "Plantes/plants/_detail_groups.html" %}
+
+            {% include "includes/_field.html" with field=form.comment %}
+        </section>
+
+        {# Masqués tant qu'aucune action n'est choisie (care_bulk.js) #}
+        <section class="panel care__plants" data-needs-action hidden>
+            <div class="care__head">
+                <label class="care-group__pick">
+                    <input type="checkbox" data-all>
+                    <span class="form__group-title">2. Quelles plantes ?</span>
+                </label>
+                <span class="quiet" data-count></span>
+            </div>
+
+            {% for spot, plants in groups %}
+                <details class="care-group" open data-group>
+                    <summary class="care-group__head">
+                        <label class="care-group__pick">
+                            <input type="checkbox" data-group-all>
+                            <span class="care-group__name">
+                                {% if spot %}{% if spot.room %}{{ spot.room }} · {% endif %}{{ spot }}{% else %}Sans emplacement{% endif %}
+                            </span>
+                        </label>
+                        <span class="quiet" data-group-count></span>
+                    </summary>
+
+                    {% for plant in plants %}
+                        <div class="care-plant" data-plant="{{ plant.id }}">
+                            <label class="care-plant__row">
+                                <input type="checkbox" name="plants" value="{{ plant.id }}"{% if plant.id in checked %} checked{% endif %}>
+                                <span class="care-plant__thumb">
+                                    {% if plant.image %}
+                                        <img src="{{ plant.image.url }}" alt="" loading="lazy">
+                                    {% elif plant.specie.image %}
+                                        <img src="{{ plant.specie.image.url }}" alt="" loading="lazy">
+                                    {% else %}
+                                        {% include "includes/_icon_leaf.html" %}
+                                    {% endif %}
+                                </span>
+                                <span class="care-plant__who">
+                                    <span class="care-plant__name">
+                                        {% if plant.surname %}{{ plant.surname }}{% elif plant.specie %}{{ plant.specie.vernacular_name }}{% else %}Plante #{{ plant.id }}{% endif %}
+                                        {% if plant.cultivar %}‘{{ plant.cultivar }}’{% endif %}
+                                    </span>
+                                    <span class="care-plant__sub">
+                                        {% if plant.surname and plant.specie %}{{ plant.specie.vernacular_name }}{% endif %}
+                                        {% if plant.specie %}<span class="latin">{{ plant.specie.scientific_name }}</span>{% endif %}
+                                    </span>
+                                </span>
+                                {% if plant.state %}<span class="chip care-plant__state">{{ plant.state }}</span>{% endif %}
+                            </label>
+                            <button class="btn btn--small care-plant__refine" type="button" data-refine aria-expanded="false">Préciser</button>
+
+                            {# Rempli au premier clic sur « Préciser », depuis le gabarit en bas de page #}
+                            <div class="care-plant__more" hidden data-override></div>
+                        </div>
+                    {% endfor %}
+                </details>
+            {% endfor %}
+        </section>
+
+        <div class="care-bar" data-needs-action hidden>
+            <span data-count></span>
+            <button class="btn btn--primary" type="submit" data-submit disabled>Enregistrer</button>
+        </div>
+    </form>
+
+    {# Gabarit des précisions d'une plante : cloné par care_bulk.js, « p__ » remplacé par « p<id> », #}
+    {# prérempli avec le commun du lot. Le champ caché dit au serveur de lire ces champs-ci plutôt que le commun #}
+    <template id="care-override">
+        <input type="hidden" name="p__-refined" value="1">
+        <p class="field__help">Prérempli avec le commun du lot : change ce qui diffère pour cette plante.</p>
+        {% include "Plantes/plants/_detail_groups.html" with detail_groups=override_groups prefix="p__-" %}
+        {% include "includes/_field.html" with field=override_form.comment %}
+        <div class="form__row">
+            {% include "includes/_field.html" with field=override_form.state %}
+            {% include "includes/_field.html" with field=override_form.image %}
+        </div>
+        <div class="form__row">
+            {% include "includes/_field.html" with field=override_form.height %}
+            {% include "includes/_field.html" with field=override_form.width %}
+            {% include "includes/_field.html" with field=override_form.n_leaves %}
+        </div>
+    </template>
+
+    {% endif %}
+
+    <script src="{% static 'Plantes/js/tags_input.js' %}"></script>
+    <script src="{% static 'Plantes/js/care_detail.js' %}"></script>
+    <script src="{% static 'Plantes/js/care_bulk.js' %}"></script>
+
+{% endblock %}

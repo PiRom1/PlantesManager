@@ -11,6 +11,8 @@
 // Balisage attendu :
 //   <button data-opens="dialog-spot">
 //   <dialog id="dialog-spot" data-post-url="..." data-target="id_spot">        (menu déroulant)
+//   <dialog id="dialog-room" data-post-url="..." data-target="id_spot_room id_room">
+//                                                    (plusieurs menus, sélectionné dans chacun)
 //   <dialog id="dialog-specie" data-post-url="..." data-target="id_specie"
 //           data-label-target="specie-search">                               (champ caché + champ visible)
 //       <form>
@@ -19,6 +21,9 @@
 //           ...
 //       </form>
 //   </dialog>
+//
+// Chaque cible reçoit ensuite un événement « quick-add » dont `detail` est la
+// réponse du serveur (ex. la pièce d'un emplacement créé, pour room_spots.js).
 
 function getCookie(name) {
     const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
@@ -29,7 +34,7 @@ function getCookie(name) {
 function setupQuickAdd(dialog) {
 
     const form = dialog.querySelector('form');
-    const target = document.getElementById(dialog.dataset.target);
+    const targets = dialog.dataset.target.split(' ').map(id => document.getElementById(id));
     const label = dialog.dataset.labelTarget ? document.getElementById(dialog.dataset.labelTarget) : null;
     const errors = dialog.querySelector('[data-errors]');
     const similar = dialog.querySelector('[data-similar]');
@@ -38,21 +43,23 @@ function setupQuickAdd(dialog) {
     // Champ caché + champ visible : l'identifiant d'un côté, le libellé de l'autre
     function select(id, name) {
         if (label) {
-            target.value = id;
+            targets[0].value = id;
             label.value = name;
         } else {
-            target.add(new Option(name, id, true, true));
+            targets.forEach(target => target.add(new Option(name, id, true, true)));
         }
     }
 
-    function done(id, name) {
-        select(id, name);
+    // Après la remise à zéro de la boîte : qui écoute peut y réécrire
+    function done(data) {
+        select(data.id, data.name);
         form.reset();
 
         if (similar) {
             similar.replaceChildren();
         }
 
+        targets.forEach(target => target.dispatchEvent(new CustomEvent('quick-add', { detail: data })));
         dialog.close();
     }
 
@@ -75,7 +82,7 @@ function setupQuickAdd(dialog) {
             choose.type = 'button';
             choose.className = 'btn btn--small';
             choose.textContent = 'C\'est celle-ci';
-            choose.addEventListener('click', () => done(match.id, match.label));
+            choose.addEventListener('click', () => done({ id: match.id, name: match.label }));
 
             item.append(text, choose);
             list.appendChild(item);
@@ -120,7 +127,7 @@ function setupQuickAdd(dialog) {
                     return;
                 }
 
-                done(data.id, data.name);
+                done(data);
             });
     });
 }

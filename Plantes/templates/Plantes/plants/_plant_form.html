@@ -46,7 +46,18 @@
     <div class="form__group">
         <span class="form__group-title">Conditions de culture</span>
 
-        <div class="form__row">
+        {# La pièce d'abord : l'emplacement n'apparaît qu'ensuite, parmi les siens (room_spots.js) #}
+        <div class="form__row" data-room-select="{{ form.room.auto_id }}" data-spot-select="{{ form.spot.auto_id }}"
+             data-dialog-room="{{ spot_form.room.auto_id }}">
+            <div class="field{% if form.room.errors %} field--error{% endif %}">
+                <label class="field__label" for="{{ form.room.id_for_label }}">{{ form.room.label }}</label>
+                <div class="field__inline">
+                    {{ form.room }}
+                    <button class="btn" type="button" data-opens="dialog-room">Nouvelle</button>
+                </div>
+                {{ form.room.errors }}
+            </div>
+
             <div class="field{% if form.spot.errors %} field--error{% endif %}">
                 <label class="field__label" for="{{ form.spot.id_for_label }}">{{ form.spot.label }}</label>
                 <div class="field__inline">
@@ -55,7 +66,9 @@
                 </div>
                 {{ form.spot.errors }}
             </div>
+        </div>
 
+        <div class="form__row">
             <div class="field{% if form.pot.errors %} field--error{% endif %}">
                 <label class="field__label" for="{{ form.pot.id_for_label }}">{{ form.pot.label }}</label>
                 <div class="field__inline">
@@ -64,9 +77,9 @@
                 </div>
                 {{ form.pot.errors }}
             </div>
-        </div>
 
-        {% include "includes/_field.html" with field=form.substrate %}
+            {% include "includes/_field.html" with field=form.substrate %}
+        </div>
 
         {# Équipement propre à la plante : il s'ajoute à celui de l'emplacement #}
         <div class="form__row">
@@ -150,8 +163,9 @@
     </form>
 </dialog>
 
-{# Pièce créée depuis la boîte emplacement : les deux boîtes s'empilent, celle-ci se referme seule #}
-{% include "Plantes/spots/_room_dialog.html" with form=spot_form %}
+{# Pièce créée depuis le formulaire ou depuis la boîte emplacement (les deux boîtes s'empilent alors) : #}
+{# elle est sélectionnée dans les deux menus, la boîte emplacement s'ouvrant toujours sur la pièce de la plante #}
+{% include "Plantes/spots/_room_dialog.html" with form=spot_form also=form.room.auto_id %}
 
 
 <dialog id="dialog-pot" data-post-url="{% url 'add_pot' %}" data-target="{{ form.pot.auto_id }}">
@@ -175,3 +189,4 @@
 <script src="{% static 'Plantes/js/autocomplete.js' %}"></script>
 <script src="{% static 'Plantes/js/open_dialog.js' %}"></script>
 <script src="{% static 'Plantes/js/quick_add.js' %}"></script>
+<script src="{% static 'Plantes/js/room_spots.js' %}"></script>

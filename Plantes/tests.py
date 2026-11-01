@@ -457,6 +457,63 @@ class RoomTests(TestCase):
         self.assertEqual(self.client.post(reverse('delete_room', args=[other.id])).status_code, 404)
 
 
+class PlantRoomThenSpotTests(TestCase):
+    """Formulaire plante : la pièce se choisit d'abord, l'emplacement ensuite, parmi les siens."""
+
+    def setUp(self):
+        self.user = make_user()
+        self.client.force_login(self.user)
+        self.salon = Room.objects.create(user=self.user, name='Salon')
+        self.chambre = Room.objects.create(user=self.user, name='Chambre')
+        self.etagere = Spot.objects.create(user=self.user, name='Étagère', room=self.salon)
+        self.bureau = Spot.objects.create(user=self.user, name='Bureau', room=self.chambre)
+        self.couloir = Spot.objects.create(user=self.user, name='Couloir')
+        self.specie = Specie.objects.create(vernacular_name='Monstera', scientific_name='Monstera deliciosa')
+        self.plant = Plant.objects.create(user=self.user, specie=self.specie, spot=self.etagere)
+
+    def edit(self, **data):
+        return self.client.post(reverse('edit_plant', args=[self.plant.id]), {'specie': self.specie.id, **data})
+
+    def test_chaque_emplacement_porte_sa_piece(self):
+        response = self.client.get(reverse('add_plant'))
+
+        self.assertContains(response, f'<option value="{self.etagere.id}" data-room="{self.salon.id}">', html=False)
+        self.assertContains(response, f'<option value="{self.couloir.id}" data-room="">', html=False)
+
+    def test_la_piece_de_l_emplacement_est_preselectionnee(self):
+        response = self.client.get(reverse('edit_plant', args=[self.plant.id]))
+
+        self.assertEqual(response.context['form']['room'].value(), self.salon.id)
+
+    def test_un_emplacement_dans_la_piece_choisie(self):
+        response = self.edit(room=self.chambre.id, spot=self.bureau.id)
+
+        self.assertRedirects(response, reverse('detail_plant', args=[self.plant.id]))
+        self.plant.refresh_from_db()
+        self.assertEqual(self.plant.spot, self.bureau)
+
+    def test_un_emplacement_hors_de_la_piece_est_refuse(self):
+        response = self.edit(room=self.chambre.id, spot=self.etagere.id)
+
+        self.assertFormError(response.context['form'], 'spot', "Cet emplacement n'est pas dans la pièce choisie.")
+
+    def test_une_piece_sans_emplacement_est_refusee(self):
+        # La plante n'a pas de pièce à elle : sans emplacement, le choix serait perdu
+        response = self.edit(room=self.salon.id)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['form'].has_error('spot'))
+
+    def test_sans_piece_celle_de_l_emplacement_fait_foi(self):
+        self.assertRedirects(self.edit(spot=self.bureau.id), reverse('detail_plant', args=[self.plant.id]))
+
+    def test_l_emplacement_cree_a_la_volee_renvoie_sa_piece(self):
+        response = self.client.post(reverse('add_spot'), {'name': 'Fenêtre', 'room': self.salon.id, 'drying_factor': 1},
+                                    headers={'X-Requested-With': 'XMLHttpRequest'})
+
+        self.assertEqual(response.json()['room'], self.salon.id)
+
+
 class PlantListFiltersTests(TestCase):
 
     def setUp(self):
@@ -695,3 +752,123 @@ class SpeciePagesTests(TestCase):
 
         self.assertContains(response, 'id="dialog-specie"')
         self.assertContains(response, 'data-create-dialog="dialog-specie"')
+
+
+class CareTests(TestCase):
+    """Entretien groupé : une entrée par plante cochée, commun du lot corrigé par les précisions."""
+
+    def setUp(self):
+        self.user = make_user()
+        self.client.force_login(self.user)
+        self.water = Action.objects.create(code='WATER', name='Arrosage', description='')
+        self.check = Action.objects.create(code='CHECK_PESTS', name='Inspection parasites', description='')
+        self.dead = PlantState.objects.create(code='DEAD', name='Morte', description='')
+        self.flowering = PlantState.objects.create(code='FLOWERING', name='Floraison', description='')
+        specie = Specie.objects.create(vernacular_name='Monstera', scientific_name='Monstera deliciosa')
+        salon = Room.objects.create(user=self.user, name='Salon')
+        self.vitrine = Spot.objects.create(user=self.user, name='Vitrine', room=salon)
+        self.momo = Plant.objects.create(user=self.user, specie=specie, surname='Momo', spot=self.vitrine)
+        self.pipi = Plant.objects.create(user=self.user, specie=specie, surname='Pipi', spot=self.vitrine)
+        self.anon = Plant.objects.create(user=self.user, specie=specie)
+        self.feu = Plant.objects.create(user=self.user, specie=specie, surname='Feu', state=self.dead)
+        self.other = Plant.objects.create(user=make_user('autre'), specie=specie, surname='Pas à moi')
+
+    def post(self, **data):
+        base = {'action': self.water.id, 'date': '2026-11-01T09:00'}
+        return self.client.post(reverse('care'), {**base, **data})
+
+    def test_les_plantes_par_emplacement_sans_les_mortes(self):
+        response = self.client.get(reverse('care'))
+
+        groups = [(spot, [plant.id for plant in plants]) for spot, plants in response.context['groups']]
+        self.assertEqual(groups, [(self.vitrine, [self.momo.id, self.pipi.id]), (None, [self.anon.id])])
+        self.assertContains(response, 'Salon · Vitrine')
+        self.assertContains(response, 'Sans emplacement')
+        self.assertNotContains(response, 'Pas à moi')
+        # Le gabarit des précisions, à cloner, avec son préfixe à remplacer
+        self.assertContains(response, 'name="p__-detail_WATER_water_type"')
+        self.assertContains(response, 'name="p__-height"')
+
+    def test_une_entree_par_plante_avec_le_commun_du_lot(self):
+        response = self.post(plants=[self.momo.id, self.pipi.id], comment='Grand arrosage',
+                             detail_WATER_water_type='TAP', detail_WATER_volume_ml='200', detail_WATER_runoff='on')
+
+        self.assertRedirects(response, reverse('care') + '?saved=2')
+
+        for plant in (self.momo, self.pipi):
+            entry = PlantHistory.objects.get(plant=plant)
+            self.assertEqual(entry.action, self.water)
+            self.assertEqual(entry.comment, 'Grand arrosage')
+            self.assertEqual(entry.detail, {'water_type': 'TAP', 'volume_ml': 200, 'runoff': True})
+            self.assertEqual(timezone.localtime(entry.date).strftime('%Y-%m-%d %H:%M'), '2026-11-01 09:00')
+
+        self.assertFalse(PlantHistory.objects.filter(plant=self.anon).exists())
+
+    def test_les_precisions_d_une_plante_remplacent_le_commun(self):
+        # Les précisions arrivent préremplies du commun (volume 200 recopié) ;
+        # ce qui y est changé ou effacé (écoulement décoché) vaut pour cette plante seule
+        self.post(plants=[self.momo.id, self.pipi.id], comment='Au robinet',
+                  detail_WATER_water_type='TAP', detail_WATER_volume_ml='200', detail_WATER_runoff='on',
+                  **{f'p{self.pipi.id}-refined': '1',
+                     f'p{self.pipi.id}-detail_WATER_water_type': 'DEMINERALIZED',
+                     f'p{self.pipi.id}-detail_WATER_volume_ml': '200',
+                     f'p{self.pipi.id}-comment': 'Déminéralisée pour elle',
+                     f'p{self.pipi.id}-height': '42.5',
+                     f'p{self.pipi.id}-state': self.flowering.id})
+
+        momo = PlantHistory.objects.get(plant=self.momo)
+        self.assertEqual(momo.detail, {'water_type': 'TAP', 'volume_ml': 200, 'runoff': True})
+        self.assertEqual(momo.comment, 'Au robinet')
+        self.assertIsNone(momo.height)
+        self.assertIsNone(momo.state)
+
+        pipi = PlantHistory.objects.get(plant=self.pipi)
+        self.assertEqual(pipi.detail, {'water_type': 'DEMINERALIZED', 'volume_ml': 200, 'runoff': False})
+        self.assertEqual(pipi.comment, 'Déminéralisée pour elle')
+        self.assertEqual(pipi.height, 42.5)
+        self.assertEqual(pipi.state, self.flowering)
+
+        # Le journal fait foi : l'état précisé devient celui de la plante
+        self.pipi.refresh_from_db()
+        self.momo.refresh_from_db()
+        self.assertEqual(self.pipi.state, self.flowering)
+        self.assertIsNone(self.momo.state)
+
+    def test_des_mesures_sans_precisions_ouvertes_gardent_le_commun(self):
+        # Hauteur saisie pour Pipi mais précisions jamais ouvertes : options et commentaire du lot
+        self.post(plants=[self.pipi.id], comment='Au robinet', detail_WATER_water_type='TAP',
+                  **{f'p{self.pipi.id}-height': '12'})
+
+        pipi = PlantHistory.objects.get(plant=self.pipi)
+        self.assertEqual(pipi.detail, {'water_type': 'TAP', 'runoff': False})
+        self.assertEqual(pipi.comment, 'Au robinet')
+        self.assertEqual(pipi.height, 12)
+
+    def test_un_champ_conditionnel_tombe_si_la_precision_le_rend_sans_objet(self):
+        # Les parasites recopiés du commun ne comptent plus une fois le résultat passé à « Absence »
+        self.post(action=self.check.id, plants=[self.momo.id, self.pipi.id],
+                  detail_CHECK_PESTS_result='CONFIRMED', detail_CHECK_PESTS_pests=['THRIPS'], detail_CHECK_PESTS_severity='LIGHT',
+                  **{f'p{self.pipi.id}-refined': '1',
+                     f'p{self.pipi.id}-detail_CHECK_PESTS_result': 'CLEAR',
+                     f'p{self.pipi.id}-detail_CHECK_PESTS_pests': ['THRIPS'],
+                     f'p{self.pipi.id}-detail_CHECK_PESTS_severity': 'LIGHT'})
+
+        self.assertEqual(PlantHistory.objects.get(plant=self.momo).detail,
+                         {'result': 'CONFIRMED', 'pests': ['THRIPS'], 'severity': 'LIGHT'})
+        self.assertEqual(PlantHistory.objects.get(plant=self.pipi).detail, {'result': 'CLEAR'})
+
+    def test_sans_plante_ou_sans_action_rien_n_est_ecrit(self):
+        response = self.post(plants=[])
+        self.assertContains(response, 'Coche au moins une plante.')
+
+        response = self.post(action='', plants=[self.momo.id])
+        self.assertContains(response, 'Choisis une action.')
+        self.assertEqual(response.context['checked'], [self.momo.id])
+
+        self.assertFalse(PlantHistory.objects.exists())
+
+    def test_les_plantes_des_autres_et_les_mortes_sont_ignorees(self):
+        response = self.post(plants=[self.other.id, self.feu.id])
+
+        self.assertContains(response, 'Coche au moins une plante.')
+        self.assertFalse(PlantHistory.objects.exists())

@@ -2,7 +2,19 @@
 
 from django import forms
 
-from Plantes.models import Plant, PlantHistory, Pot, PropagationMedium, PropagationMethod, Room, Specie, Spot
+from Plantes.models import Action, Plant, PlantHistory, PlantState, Pot, PropagationMedium, PropagationMethod, Room, Specie, Spot
+
+
+class SpotSelect(forms.Select):
+    """Menu des emplacements dont chaque option porte sa pièce, pour le filtre de room_spots.js."""
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+
+        if value:
+            option['attrs']['data-room'] = value.instance.room_id or ''
+
+        return option
 
 
 class PlantForm(forms.ModelForm):
@@ -12,7 +24,13 @@ class PlantForm(forms.ModelForm):
     Le propriétaire n'est pas exposé : il est forcé à request.user dans la vue.
     L'espèce passe par un champ caché alimenté par l'autocomplétion : avec
     plusieurs milliers d'espèces, un menu déroulant est inutilisable.
+
+    La pièce n'est pas un champ du modèle : elle est portée par l'emplacement.
+    Elle se choisit d'abord, pour restreindre le menu des emplacements à ceux
+    qu'elle contient.
     """
+
+    room = forms.ModelChoiceField(queryset=Room.objects.none(), required=False, label='Pièce', empty_label='Aucune')
 
     class Meta:
         model = Plant
@@ -35,6 +53,7 @@ class PlantForm(forms.ModelForm):
         ]
         widgets = {
             'specie': forms.HiddenInput(),
+            'spot': SpotSelect(),
             'cultivar': forms.TextInput(attrs={'placeholder': 'Variegata, ...'}),
             # Format ISO imposé : avec la locale fr, le navigateur refuserait « 14/10/2026 »
             # et afficherait un champ vide, même pour une date existante
@@ -78,6 +97,24 @@ class PlantForm(forms.ModelForm):
         # un changement ou une correction passe par une entrée du journal
         if self.instance.pk:
             del self.fields['state']
+
+        if self.instance.spot:
+            self.initial.setdefault('room', self.instance.spot.room_id)
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        room = cleaned_data.get('room')
+        spot = cleaned_data.get('spot')
+
+        # Sans pièce choisie, celle de l'emplacement fait foi. Avec une pièce,
+        # il faut un emplacement qui s'y trouve : la plante n'a pas de pièce à elle
+        if room and not spot:
+            self.add_error('spot', "Choisis un emplacement dans cette pièce, ou crée-le : c'est lui qui dit où est la plante.")
+        elif room and spot.room_id != room.id:
+            self.add_error('spot', "Cet emplacement n'est pas dans la pièce choisie.")
+
+        return cleaned_data
 
 
 class PlantImageForm(forms.ModelForm):
@@ -148,6 +185,9 @@ class SpotForm(forms.ModelForm):
         }
 
     def __init__(self, *args, user=None, **kwargs):
+        # Ce formulaire cohabite avec celui de la plante (pièce, équipements)
+        # dans la même page : les identifiants HTML doivent différer
+        kwargs.setdefault('auto_id', 'id_spot_%s')
         super().__init__(*args, **kwargs)
 
         self.fields['room'].queryset = Room.objects.filter(user=user).order_by('name')
@@ -303,3 +343,34 @@ class SpecieForm(forms.ModelForm):
         help_texts = {
             'abiotic_conditions': "Tes notes de lecture sur ce qui convient à l'espèce. Affichées sur la fiche de chacune de tes plantes de cette espèce.",
         }
+
+
+class CareForm(forms.Form):
+    """
+    Entretien groupé : l'action, la date et le commentaire communs à toutes
+    les plantes cochées. Les options de l'action (Action.DETAIL_FIELDS) sont
+    lues à part, comme dans le journal.
+    """
+
+    action = forms.ModelChoiceField(label='Action', queryset=Action.objects.order_by('name'),
+                                    empty_label='Choisis une action',
+                                    error_messages={'required': 'Choisis une action.'})
+    date = forms.DateTimeField(label='Date', input_formats=['%Y-%m-%dT%H:%M'],
+                               widget=forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'))
+    comment = forms.CharField(label='Commentaire', required=False, widget=forms.Textarea(attrs={'rows': 2}))
+
+
+class CareOverrideForm(forms.Form):
+    """
+    Précisions d'une plante dans un entretien groupé : commentaire, état,
+    mesures, photo, propres à elle. Instancié avec prefix='p<id>' ; le gabarit
+    de la page l'est avec 'p__', que care_bulk.js remplace en le clonant.
+    """
+
+    comment = forms.CharField(label='Commentaire', required=False, widget=forms.Textarea(attrs={'rows': 2}))
+    state = forms.ModelChoiceField(label='Nouvel état', required=False, empty_label='Inchangé',
+                                   queryset=PlantState.objects.order_by('name'))
+    height = forms.FloatField(label='Hauteur (cm)', required=False)
+    width = forms.FloatField(label='Largeur (cm)', required=False)
+    n_leaves = forms.IntegerField(label='Nombre de feuilles', required=False)
+    image = forms.ImageField(label='Photo', required=False, widget=forms.FileInput(attrs={'accept': 'image/*'}))

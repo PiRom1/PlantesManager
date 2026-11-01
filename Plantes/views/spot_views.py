@@ -50,7 +50,8 @@ def add_spot(request):
             spot.save()
 
             if is_ajax(request):
-                return JsonResponse({'id': spot.id, 'name': str(spot)})
+                # La pièce sert au formulaire plante, qui la sélectionne à son tour
+                return JsonResponse({'id': spot.id, 'name': str(spot), 'room': spot.room_id})
 
             return redirect('list_spots')
 

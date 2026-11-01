@@ -17,9 +17,10 @@ from Plantes.models import Action, DetailFieldType, Plant, PlantHistory, PlantSt
 def restrict_to_user(form, user):
     """
     Limite les menus déroulants aux objets de l'utilisateur :
-    ses emplacements, ses pots et ses plantes (pour la plante mère).
+    ses pièces, ses emplacements, ses pots et ses plantes (pour la plante mère).
     """
 
+    form.fields['room'].queryset = Room.objects.filter(user=user).order_by('name')
     form.fields['spot'].queryset = Spot.objects.filter(user=user).order_by('name')
     form.fields['pot'].queryset = Pot.objects.filter(user=user).order_by('denomination')
     form.fields['father'].queryset = Plant.objects.filter(user=user).select_related('specie').order_by('surname', 'specie__vernacular_name')
@@ -272,29 +273,38 @@ def build_detail(action, posted):
                 detail[field.name] = tags
             continue
 
-        value = posted.get(key, '').strip()
+        value = read_detail_value(field, posted.get(key, ''))
 
-        if not value:
-            continue
-
-        if field.type == DetailFieldType.SELECT:
-            if value in [code for code, label in field.choices]:
-                detail[field.name] = value
-
-        elif field.type == DetailFieldType.INTEGER:
-            if value.lstrip('-').isdigit():
-                detail[field.name] = int(value)
-
-        elif field.type == DetailFieldType.DECIMAL:
-            try:
-                detail[field.name] = float(value.replace(',', '.'))
-            except ValueError:
-                pass
-
-        else:
+        if value is not None:
             detail[field.name] = value
 
     return detail
+
+
+def read_detail_value(field, value):
+    """
+    Valeur postée d'un champ select, entier, décimal ou texte, convertie
+    selon son type. None si elle est vide ou invalide.
+    """
+
+    value = value.strip()
+
+    if not value:
+        return None
+
+    if field.type == DetailFieldType.SELECT:
+        return value if value in [code for code, label in field.choices] else None
+
+    if field.type == DetailFieldType.INTEGER:
+        return int(value) if value.lstrip('-').isdigit() else None
+
+    if field.type == DetailFieldType.DECIMAL:
+        try:
+            return float(value.replace(',', '.'))
+        except ValueError:
+            return None
+
+    return value
 
 
 def clean_tags(posted_values, choices):
@@ -317,7 +327,7 @@ def clean_tags(posted_values, choices):
     return tags
 
 
-def detail_groups(actions, entry=None, presets=None):
+def detail_groups(actions, entry=None, presets=None, prefix=''):
     """
     Champs de détail de chaque action, prêts pour le template : (action, [(champ,
     id du champ, valeur)]). Les valeurs viennent de l'entrée modifiée, s'il y en
@@ -325,6 +335,7 @@ def detail_groups(actions, entry=None, presets=None):
     (ex. les parasites de l'épisode en cours pour un traitement).
 
     Pour un champ à choix multiples, la valeur est une liste de (code, libellé).
+    `prefix` distingue plusieurs jeux de champs dans la même page (entretien groupé).
     """
 
     presets = presets or {}
@@ -345,7 +356,7 @@ def detail_groups(actions, entry=None, presets=None):
             if field.type == DetailFieldType.TAGS and current:
                 current = [(code, field.display(code)) for code in current]
 
-            fields.append((field, f'detail_{action.code}_{field.name}', current))
+            fields.append((field, f'{prefix}detail_{action.code}_{field.name}', current))
 
         groups.append((action, fields))
 

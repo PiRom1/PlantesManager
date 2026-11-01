@@ -45,6 +45,13 @@
                 </svg>
                 Mes plantes
             </a>
+            <a class="nav__link {% if active == 'care' %}nav__link--active{% endif %}" href="{% url 'care' %}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11Z"/>
+                    <path d="M9 14a3 3 0 0 0 3 3"/>
+                </svg>
+                Entretien
+            </a>
             <a class="nav__link {% if active in 'list_rooms add_room detail_room' %}nav__link--active{% endif %}" href="{% url 'list_rooms' %}">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M3 11 12 4l9 7"/>
